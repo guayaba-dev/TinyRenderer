@@ -28,8 +28,8 @@ Model* model = NULL;
 Color WHITE = Color(255, 255, 255);
 Color RED = Color(255, 0, 0);
 Color GREEN = Color(0, 255, 0);
-const int WIDTH = 200;
-const int HEIGHT = 200;
+const int WIDTH = 400;
+const int HEIGHT = 400;
 
 int main(int argc, char** argv) {
   if (2 == argc) {
@@ -47,18 +47,38 @@ int main(int argc, char** argv) {
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
 
+  Vec3f lightCoords(0, 0, -1);
+
   for (int i = 0; i < model->nfaces(); i++) {
     std::vector<int> face = model->face(i);
+
+    Vec3f world_coords[3];
     Vec2i screen_coords[3];
+    Vec3f n;
+
     for (int j = 0; j < 3; j++) {
-      Vec3f world_coords = model->vert(face[j]);
-      screen_coords[j] = Vec2i((world_coords.x + 1.) * WIDTH / 2.,
-                               (world_coords.y + 1.) * HEIGHT / 2.);
+      Vec3f v = model->vert(face[j]);
+
+      // we obtein the xy part of our world_coords
+      screen_coords[j] =
+          Vec2i((v.x + 1.) * WIDTH / 2., (v.y + 1.) * HEIGHT / 2.);
+
+      v.z = -v.z;
+
+      world_coords[j] = v;
     }
 
-    Color randColor = Color(rand() % 255, rand() % 255, rand() % 255);
+    n = (world_coords[2] - world_coords[0]) ^
+        (world_coords[1] - world_coords[0]);
 
-    drawTriangle(screen_coords, renderer, randColor);
+    n.normalize();
+
+    float intensity = std::max(lightCoords * n, 0.f);
+
+    Color shadedColor =
+        Color(intensity * 255, intensity * 255, intensity * 255);
+
+    if (intensity > 0.) drawTriangle(screen_coords, renderer, shadedColor);
   }
 
   SDL_RenderPresent(renderer);
