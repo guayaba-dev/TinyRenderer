@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdlib>
+#include <limits>
 #include <utility>
 
 #include "SDL2/SDL.h"
@@ -21,8 +22,9 @@ void drawLine(int x0, int y0, int x1, int y1, SDL_Renderer* renderer,
               Color color);
 // void drawTriangle(Vec2i t0, Vec2i t1, Vec2i t2, SDL_Renderer* renderer,
 // Color color);
-Vec3f getBarycentric(Vec2i* vertex, Vec2i point);
-void drawTriangle(Vec2i* points, SDL_Renderer* renderer, Color color);
+Vec3f getBarycentric(Vec3i vertex[], Vec3i point);
+void drawTriangle(Vec3i points[], float z_buffer[], SDL_Renderer* renderer,
+                  Color color);
 
 Model* model = NULL;
 Color WHITE = Color(255, 255, 255);
@@ -49,11 +51,17 @@ int main(int argc, char** argv) {
 
   Vec3f lightCoords(0, 0, -1);
 
+  float z_buffer[WIDTH * HEIGHT];
+
+  for (int i = 0; i < WIDTH * HEIGHT; i++) {
+    z_buffer[i] = std::numeric_limits<int>::min();
+  }
+
   for (int i = 0; i < model->nfaces(); i++) {
     std::vector<int> face = model->face(i);
 
     Vec3f world_coords[3];
-    Vec2i screen_coords[3];
+    Vec3i screen_coords[3];
     Vec3f n;
 
     for (int j = 0; j < 3; j++) {
@@ -61,9 +69,7 @@ int main(int argc, char** argv) {
 
       // we obtein the xy part of our world_coords
       screen_coords[j] =
-          Vec2i((v.x + 1.) * WIDTH / 2., (v.y + 1.) * HEIGHT / 2.);
-
-      v.z = -v.z;
+          Vec3i((v.x + 1.) * WIDTH / 2., (v.y + 1.) * HEIGHT / 2., v.z);
 
       world_coords[j] = v;
     }
@@ -78,7 +84,8 @@ int main(int argc, char** argv) {
     Color shadedColor =
         Color(intensity * 255, intensity * 255, intensity * 255);
 
-    if (intensity > 0.) drawTriangle(screen_coords, renderer, shadedColor);
+    if (intensity > 0.)
+      drawTriangle(screen_coords, z_buffer, renderer, shadedColor);
   }
 
   SDL_RenderPresent(renderer);
@@ -163,7 +170,8 @@ void drawTriangle(Vec2i t0, Vec2i t1, Vec2i t2, SDL_Renderer* renderer,
 }
 */
 
-void drawTriangle(Vec2i* points, SDL_Renderer* renderer, Color color) {
+void drawTriangle(Vec3i points[], float z_buffer[], SDL_Renderer* renderer,
+                  Color color) {
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
 
   Vec2i bboxmin(WIDTH, HEIGHT);
@@ -178,7 +186,7 @@ void drawTriangle(Vec2i* points, SDL_Renderer* renderer, Color color) {
     bboxmax.y = std::min(clamp.y, std::max(bboxmax.y, points[i].y));
   }
 
-  Vec2i P;
+  Vec3i P;
 
   for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) {
     for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) {
@@ -187,12 +195,22 @@ void drawTriangle(Vec2i* points, SDL_Renderer* renderer, Color color) {
       if (barycentric.x < 0. || barycentric.y < 0. || barycentric.z < 0.)
         continue;
 
-      SDL_RenderDrawPoint(renderer, P.x, HEIGHT - P.y);
+      P.z = 0;
+
+      // z coords aproximation
+
+      P.z += points[0].z * barycentric.x + points[1].z * barycentric.y +
+             points[2].z * barycentric.z;
+
+      if (z_buffer[P.x + P.y * WIDTH] < P.z) {
+        z_buffer[P.x + P.y * WIDTH] = P.z;
+        SDL_RenderDrawPoint(renderer, P.x, HEIGHT - P.y);
+      }
     }
   }
 }
 
-Vec3f getBarycentric(Vec2i* vertex, Vec2i point) {
+Vec3f getBarycentric(Vec3i vertex[], Vec3i point) {
   Vec3f x_vertex = Vec3f(vertex[2].x - vertex[0].x, vertex[1].x - vertex[0].x,
                          vertex[0].x - point.x);
   Vec3f y_vertex = Vec3f(vertex[2].y - vertex[0].y, vertex[1].y - vertex[0].y,
