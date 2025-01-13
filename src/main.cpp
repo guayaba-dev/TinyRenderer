@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdlib>
 #include <utility>
 
 #include "SDL2/SDL.h"
@@ -13,12 +14,15 @@ struct Color {
   int r;
   int g;
   int b;
-  Color(const int& r, const int& g, const int& b) : r(r), g(g), b(b) {};
+  Color(const float& r, const float& g, const float& b) : r(r), g(g), b(b) {};
 };
 
-void line(int x0, int y0, int x1, int y1, SDL_Renderer* renderer, Color color);
-void triangle(Vec2i t0, Vec2i t1, Vec2i t2, SDL_Renderer* renderer,
+void drawLine(int x0, int y0, int x1, int y1, SDL_Renderer* renderer,
               Color color);
+// void drawTriangle(Vec2i t0, Vec2i t1, Vec2i t2, SDL_Renderer* renderer,
+// Color color);
+Vec3f getBarycentric(Vec2i* vertex, Vec2i point);
+void drawTriangle(Vec2i* points, SDL_Renderer* renderer, Color color);
 
 Model* model = NULL;
 Color WHITE = Color(255, 255, 255);
@@ -43,31 +47,19 @@ int main(int argc, char** argv) {
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
 
-  /*
   for (int i = 0; i < model->nfaces(); i++) {
     std::vector<int> face = model->face(i);
-
+    Vec2i screen_coords[3];
     for (int j = 0; j < 3; j++) {
-      Vec3f v0 = model->vert(face[j]);
-      Vec3f v1 = model->vert(face[(j + 1) % 3]);
-
-      int x0 = (v0.x + 1.) * WIDTH / 2.;
-      int y0 = (v0.y + 1.) * HEIGHT / 2.;
-      int x1 = (v1.x + 1.) * WIDTH / 2.;
-      int y1 = (v1.y + 1.) * HEIGHT / 2.;
-      line(x0, y0, x1, y1, renderer, WHITE);
+      Vec3f world_coords = model->vert(face[j]);
+      screen_coords[j] = Vec2i((world_coords.x + 1.) * WIDTH / 2.,
+                               (world_coords.y + 1.) * HEIGHT / 2.);
     }
+
+    Color randColor = Color(rand() % 255, rand() % 255, rand() % 255);
+
+    drawTriangle(screen_coords, renderer, randColor);
   }
-
-  */
-
-  Vec2i t0[3] = {Vec2i(10, 70), Vec2i(50, 160), Vec2i(70, 80)};
-  Vec2i t1[3] = {Vec2i(180, 50), Vec2i(150, 1), Vec2i(70, 180)};
-  Vec2i t2[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
-
-  triangle(t0[0], t0[1], t0[2], renderer, RED);
-  triangle(t1[0], t1[1], t1[2], renderer, WHITE);
-  triangle(t2[0], t2[1], t2[2], renderer, GREEN);
 
   SDL_RenderPresent(renderer);
   SDL_Delay(5000);
@@ -76,7 +68,8 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-void line(int x0, int y0, int x1, int y1, SDL_Renderer* renderer, Color color) {
+void drawLine(int x0, int y0, int x1, int y1, SDL_Renderer* renderer,
+              Color color) {
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
 
   bool step = 0;
@@ -113,7 +106,8 @@ void line(int x0, int y0, int x1, int y1, SDL_Renderer* renderer, Color color) {
   }
 }
 
-void triangle(Vec2i t0, Vec2i t1, Vec2i t2, SDL_Renderer* renderer,
+/*
+void drawTriangle(Vec2i t0, Vec2i t1, Vec2i t2, SDL_Renderer* renderer,
               Color color) {
   // vertices sorted by height lower-to-upper t2 t1 t0
 
@@ -146,4 +140,46 @@ void triangle(Vec2i t0, Vec2i t1, Vec2i t2, SDL_Renderer* renderer,
       SDL_RenderDrawPoint(renderer, x, HEIGHT - y);
     }
   }
+}
+*/
+
+void drawTriangle(Vec2i* points, SDL_Renderer* renderer, Color color) {
+  SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
+
+  Vec2i bboxmin(WIDTH, HEIGHT);
+  Vec2i bboxmax(0, 0);
+  Vec2i clamp(WIDTH, HEIGHT);
+
+  for (int i = 0; i < 3; i++) {
+    bboxmin.x = std::max(0, std::min(bboxmin.x, points[i].x));
+    bboxmin.y = std::max(0, std::min(bboxmin.y, points[i].y));
+
+    bboxmax.x = std::min(clamp.x, std::max(bboxmax.x, points[i].x));
+    bboxmax.y = std::min(clamp.y, std::max(bboxmax.y, points[i].y));
+  }
+
+  Vec2i P;
+
+  for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) {
+    for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) {
+      Vec3f barycentric = getBarycentric(points, P);
+
+      if (barycentric.x < 0. || barycentric.y < 0. || barycentric.z < 0.)
+        continue;
+
+      SDL_RenderDrawPoint(renderer, P.x, HEIGHT - P.y);
+    }
+  }
+}
+
+Vec3f getBarycentric(Vec2i* vertex, Vec2i point) {
+  Vec3f x_vertex = Vec3f(vertex[2].x - vertex[0].x, vertex[1].x - vertex[0].x,
+                         vertex[0].x - point.x);
+  Vec3f y_vertex = Vec3f(vertex[2].y - vertex[0].y, vertex[1].y - vertex[0].y,
+                         vertex[0].y - point.y);
+
+  Vec3f u = x_vertex ^ y_vertex;
+  if (abs(u.z) < 1) return Vec3f(-1, 1, 1);
+
+  return Vec3f(1 - (u.x / u.z + u.y / u.z), u.x / u.z, u.y / u.z);
 }
