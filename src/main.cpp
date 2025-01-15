@@ -10,6 +10,7 @@
 #include "SDL2/SDL.h"
 #include "geometry.h"
 #include "model.h"
+#include "tgaimage.h"
 
 struct Color {
   int r;
@@ -23,10 +24,11 @@ void drawLine(int x0, int y0, int x1, int y1, SDL_Renderer* renderer,
 // void drawTriangle(Vec2i t0, Vec2i t1, Vec2i t2, SDL_Renderer* renderer,
 // Color color);
 Vec3f getBarycentric(Vec3i vertex[], Vec3i point);
-void drawTriangle(Vec3i points[], float z_buffer[], SDL_Renderer* renderer,
-                  Color color);
+void drawTriangle(Vec3i points[], Vec2f texture_coords[], float z_buffer[],
+                  SDL_Renderer* renderer, Color color);
 
 Model* model = NULL;
+TGAImage texture = TGAImage();
 Color WHITE = Color(255, 255, 255);
 Color RED = Color(255, 0, 0);
 Color GREEN = Color(0, 255, 0);
@@ -38,8 +40,9 @@ int main(int argc, char** argv) {
     model = new Model(argv[1]);
   } else {
     model = new Model("obj/african_head.obj");
+    texture.read_tga_file("texture/african_head_diffuse.tga");
+    texture.flip_vertically();
   }
-
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
 
@@ -59,13 +62,16 @@ int main(int argc, char** argv) {
 
   for (int i = 0; i < model->nfaces(); i++) {
     std::vector<int> face = model->face(i);
+    std::vector<int> texture = model->texture(i);
 
     Vec3f world_coords[3];
     Vec3i screen_coords[3];
+    Vec2f texture_coords[3];
     Vec3f n;
 
     for (int j = 0; j < 3; j++) {
       Vec3f v = model->vert(face[j]);
+      texture_coords[j] = model->textCoord(texture[j]);
 
       // we obtein the xy part of our world_coords
       screen_coords[j] =
@@ -85,7 +91,8 @@ int main(int argc, char** argv) {
         Color(intensity * 255, intensity * 255, intensity * 255);
 
     if (intensity > 0.)
-      drawTriangle(screen_coords, z_buffer, renderer, shadedColor);
+      drawTriangle(screen_coords, texture_coords, z_buffer, renderer,
+                   shadedColor);
   }
 
   SDL_RenderPresent(renderer);
@@ -170,8 +177,8 @@ void drawTriangle(Vec2i t0, Vec2i t1, Vec2i t2, SDL_Renderer* renderer,
 }
 */
 
-void drawTriangle(Vec3i points[], float z_buffer[], SDL_Renderer* renderer,
-                  Color color) {
+void drawTriangle(Vec3i points[], Vec2f texture_coords[], float z_buffer[],
+                  SDL_Renderer* renderer, Color color) {
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
 
   Vec2i bboxmin(WIDTH, HEIGHT);
@@ -204,6 +211,17 @@ void drawTriangle(Vec3i points[], float z_buffer[], SDL_Renderer* renderer,
 
       if (z_buffer[P.x + P.y * WIDTH] < P.z) {
         z_buffer[P.x + P.y * WIDTH] = P.z;
+
+        Vec2f text_Coord = texture_coords[0] * barycentric.x +
+                           texture_coords[1] * barycentric.y +
+                           texture_coords[2] * barycentric.z;
+
+        TGAColor textureColor =
+            texture.get(text_Coord.x * texture.get_width(),
+                        text_Coord.y * texture.get_height());
+
+        SDL_SetRenderDrawColor(renderer, textureColor[2], textureColor[1],
+                               textureColor[0], 1);
         SDL_RenderDrawPoint(renderer, P.x, HEIGHT - P.y);
       }
     }
