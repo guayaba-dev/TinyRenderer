@@ -32,8 +32,8 @@ TGAImage texture = TGAImage();
 Color WHITE = Color(255, 255, 255);
 Color RED = Color(255, 0, 0);
 Color GREEN = Color(0, 255, 0);
-const int WIDTH = 400;
-const int HEIGHT = 400;
+const int WIDTH = 700;
+const int HEIGHT = 700;
 
 int main(int argc, char** argv) {
   if (2 == argc) {
@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
   }
 
   SDL_RenderPresent(renderer);
-  SDL_Delay(5000);
+  SDL_Delay(10000);
 
   delete model;
   return 0;
@@ -222,6 +222,7 @@ void drawTriangle(Vec3i points[], Vec2f texture_coords[], float z_buffer[],
 
         SDL_SetRenderDrawColor(renderer, textureColor[2], textureColor[1],
                                textureColor[0], 1);
+
         SDL_RenderDrawPoint(renderer, P.x, HEIGHT - P.y);
       }
     }
@@ -229,9 +230,9 @@ void drawTriangle(Vec3i points[], Vec2f texture_coords[], float z_buffer[],
 }
 
 Vec3f getBarycentric(Vec3i vertex[], Vec3i point) {
-  Vec3f x_vertex = Vec3f(vertex[2].x - vertex[0].x, vertex[1].x - vertex[0].x,
+  Vec3f x_vertex = Vec3f(vertex[1].x - vertex[0].x, vertex[2].x - vertex[0].x,
                          vertex[0].x - point.x);
-  Vec3f y_vertex = Vec3f(vertex[2].y - vertex[0].y, vertex[1].y - vertex[0].y,
+  Vec3f y_vertex = Vec3f(vertex[1].y - vertex[0].y, vertex[2].y - vertex[0].y,
                          vertex[0].y - point.y);
 
   Vec3f u = x_vertex ^ y_vertex;
