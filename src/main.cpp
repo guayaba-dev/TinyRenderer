@@ -1,8 +1,8 @@
+#include <SDL2/SDL_events.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
+#include <SDL2/SDL_video.h>
 
-#include <algorithm>
-#include <cstddef>
 #include <cstdlib>
 #include <limits>
 #include <utility>
@@ -34,6 +34,7 @@ Color RED = Color(255, 0, 0);
 Color GREEN = Color(0, 255, 0);
 const int WIDTH = 700;
 const int HEIGHT = 700;
+Matrix projectionMatrix;
 
 int main(int argc, char** argv) {
   if (2 == argc) {
@@ -43,6 +44,11 @@ int main(int argc, char** argv) {
     texture.read_tga_file("texture/african_head_diffuse.tga");
     texture.flip_vertically();
   }
+
+  projectionMatrix = Matrix::identity(4);
+  Vec3f camera(0.f, 0.f, 6.f);
+  projectionMatrix[3][2] = -1 / camera.z;
+
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
 
@@ -71,11 +77,25 @@ int main(int argc, char** argv) {
 
     for (int j = 0; j < 3; j++) {
       Vec3f v = model->vert(face[j]);
+
+      Matrix a(4, 1);
+
+      a[0][0] = v.x;
+      a[1][0] = v.y;
+      a[2][0] = v.z;
+      a[3][0] = 1.f;
+
+      a = projectionMatrix * a;
+
+      screen_coords[j] =
+          Vec3i(((v.x / (float)a[3][0]) + 1.) * WIDTH / 2.,
+                ((v.y / (float)a[3][0]) + 1.) * HEIGHT / 2., v.z);
+
       texture_coords[j] = model->textCoord(texture[j]);
 
-      // we obtein the xy part of our world_coords
-      screen_coords[j] =
-          Vec3i((v.x + 1.) * WIDTH / 2., (v.y + 1.) * HEIGHT / 2., v.z);
+      // we get the xy part of our world_coords
+      // screen_coords[j] =
+      // Vec3i((v.x + 1.) * WIDTH / 2., (v.y + 1.) * HEIGHT / 2., v.z);
 
       world_coords[j] = v;
     }
@@ -95,8 +115,26 @@ int main(int argc, char** argv) {
                    shadedColor);
   }
 
-  SDL_RenderPresent(renderer);
-  SDL_Delay(10000);
+  bool running = true;
+  SDL_Event event;
+
+  while (running) {
+    while (SDL_PollEvent(&event)) {
+      if (event.type == SDL_QUIT) {
+        running = false;
+      } else if (event.type == SDL_KEYDOWN) {
+        if (event.key.keysym.sym == SDLK_ESCAPE) {
+          running = false;
+        }
+      }
+    }
+
+    SDL_RenderPresent(renderer);
+    SDL_Delay(16);
+  }
+
+  SDL_DestroyWindow(window);
+  SDL_Quit();
 
   delete model;
   return 0;
@@ -220,8 +258,9 @@ void drawTriangle(Vec3i points[], Vec2f texture_coords[], float z_buffer[],
             texture.get(text_Coord.x * texture.get_width(),
                         text_Coord.y * texture.get_height());
 
-        SDL_SetRenderDrawColor(renderer, textureColor[2], textureColor[1],
-                               textureColor[0], 1);
+        SDL_SetRenderDrawColor(renderer, textureColor[2] * color.r / 255,
+                               textureColor[1] * color.g / 255,
+                               textureColor[0] * color.b / 255, 1);
 
         SDL_RenderDrawPoint(renderer, P.x, HEIGHT - P.y);
       }

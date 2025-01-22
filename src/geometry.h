@@ -1,10 +1,88 @@
 #ifndef __GEOMETRY_H__
 #define __GEOMETRY_H__
 
+#include <assert.h>
+
 #include <cmath>
+#include <cstddef>
+#include <iostream>
 #include <ostream>
+#include <vector>
+
+using std::vector;
+
+const int MAX_ALLOC = 4;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class Matrix {
+  vector<vector<float>> m;
+  int rows;
+  int collums;
+
+ public:
+  Matrix(const int rows = MAX_ALLOC, const int collums = MAX_ALLOC) {
+    m = vector<vector<float>>(rows, vector<float>(collums, 0.f));
+    this->rows = rows;
+    this->collums = collums;
+  }
+
+  vector<float>& operator[](const int idx) {
+    assert(idx >= 0 && idx < rows);
+    return m[idx];
+  }
+
+  static Matrix identity(int dimensions) {
+    Matrix result(dimensions, dimensions);
+
+    for (int i = 0; i < dimensions; i++) {
+      for (int j = 0; j < dimensions; j++) {
+        result[i][j] = (i == j) ? 1.f : 0.f;
+      }
+    }
+
+    return result;
+  }
+
+  Matrix operator*(Matrix& a) {
+    assert(collums == a.rows);
+
+    Matrix result(rows, a.collums);
+
+    for (int i = 0; i < rows; i++) {
+      for (int j = 0; j < a.collums; j++) {
+        result[i][j] = 0.f;
+        for (int k = 0; k < collums; k++) {
+          result[i][j] += m[i][k] * a[k][j];
+        }
+      }
+    }
+
+    return result;
+  }
+
+  Matrix transpose() {
+    Matrix result(collums, rows);
+
+    for (int i = 0; i < rows; i++) {
+      for (int j = 0; j < collums; j++) {
+        result[j][i] = m[i][j];
+      }
+    }
+
+    return result;
+  }
+
+  void output() {
+    std::cout << "----------------------------\n";
+    for (int j = 0; j < rows; j++) {
+      for (int i = 0; i < collums; i++) {
+        std::cerr << "[ " << m[j][i] << "] ";
+      }
+      std::cerr << '\n';
+    }
+  }
+};
 
 template <class t>
 struct Vec2 {
