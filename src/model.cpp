@@ -9,7 +9,12 @@
 #include "geometry.h"
 
 Model::Model(const char *filename)
-    : verts_(), faces_(), tex_coords_(), textures_() {
+    : verts_(),
+      faces_(),
+      tex_coords_(),
+      textures_(),
+      vertexNomals(),
+      vertexNomalsIds_() {
   std::ifstream in;
   in.open(filename, std::ifstream::in);
   if (in.fail()) return;
@@ -31,20 +36,31 @@ Model::Model(const char *filename)
       tex_coords_.push_back(tuv);
     }
 
+    else if (!line.compare(0, 3, "vn ")) {
+      iss >> trash >> trash;
+      Vec3f vn;
+      for (int i = 0; i < 3; i++) iss >> vn.raw[i];
+      vertexNomals.push_back(vn);
+    }
+
     else if (!line.compare(0, 2, "f ")) {
       std::vector<int> f;
       std::vector<int> ft;
+      std::vector<int> fvn;
 
-      int itrash, idx, tidx;
+      int idx, tidx, vnidx;
       iss >> trash;
-      while (iss >> idx >> trash >> tidx >> trash >> itrash) {
+      while (iss >> idx >> trash >> tidx >> trash >> vnidx) {
         idx--;  // in wavefront obj all indices start at 1, not zero
         tidx--;
+        vnidx--;
         f.push_back(idx);
         ft.push_back(tidx);
+        fvn.push_back(vnidx);
       }
       faces_.push_back(f);
       textures_.push_back(ft);
+      vertexNomalsIds_.push_back(fvn);
     }
   }
   std::cerr << "# v# " << verts_.size() << " f# " << faces_.size() << std::endl;
@@ -60,6 +76,12 @@ std::vector<int> Model::face(int idx) { return faces_[idx]; }
 
 std::vector<int> Model::texture(int tidx) { return textures_[tidx]; }
 
+std::vector<int> Model::vertexNomalsIds(int vnidx) {
+  return vertexNomalsIds_[vnidx];
+}
+
 Vec3f Model::vert(int i) { return verts_[i]; }
 
 Vec2f Model::textCoord(int i) { return tex_coords_[i]; }
+
+Vec3f Model::vertexNomal(int i) { return vertexNomals[i]; }

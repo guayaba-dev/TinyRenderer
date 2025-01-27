@@ -25,7 +25,9 @@ void drawLine(int x0, int y0, int x1, int y1, SDL_Renderer* renderer,
 // Color color);
 Vec3f getBarycentric(Vec3i vertex[], Vec3i point);
 void drawTriangle(Vec3i points[], Vec2f texture_coords[], float z_buffer[],
-                  SDL_Renderer* renderer, Color color);
+                  SDL_Renderer* renderer, Vec3f vertexNormals[]);
+
+void lookAt(Vec3f center, Vec3f eye, Vec3f up = Vec3f(0, -1, 0));
 
 Model* model = NULL;
 TGAImage texture = TGAImage();
@@ -34,7 +36,12 @@ Color RED = Color(255, 0, 0);
 Color GREEN = Color(0, 255, 0);
 const int WIDTH = 700;
 const int HEIGHT = 700;
-Matrix projectionMatrix;
+Matrix ViewProjection;
+Matrix ModelView;
+Vec3f cameraViewDir(0, 0, -1);
+Vec3f lightDirection(0, -1, -1);
+Vec3f eye;
+Vec3f center;
 
 int main(int argc, char** argv) {
   if (2 == argc) {
@@ -45,9 +52,13 @@ int main(int argc, char** argv) {
     texture.flip_vertically();
   }
 
-  projectionMatrix = Matrix::identity(4);
-  Vec3f camera(0.f, 0.f, 6.f);
-  projectionMatrix[3][2] = -1 / camera.z;
+  eye = Vec3f(10., 1., -10.);
+  center = Vec3f(0., 0., 0);
+
+  ViewProjection = Matrix::identity(4);
+  Vec3f camera(0.f, 0.f, 10.f);
+  lookAt(center, eye);
+  ViewProjection[3][2] = -1 / camera.z;
 
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
@@ -58,8 +69,6 @@ int main(int argc, char** argv) {
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
   SDL_RenderClear(renderer);
 
-  Vec3f lightCoords(0, 0, -1);
-
   float z_buffer[WIDTH * HEIGHT];
 
   for (int i = 0; i < WIDTH * HEIGHT; i++) {
@@ -69,10 +78,12 @@ int main(int argc, char** argv) {
   for (int i = 0; i < model->nfaces(); i++) {
     std::vector<int> face = model->face(i);
     std::vector<int> texture = model->texture(i);
+    std::vector<int> vertexNormalsId = model->vertexNomalsIds(i);
 
-    Vec3f world_coords[3];
     Vec3i screen_coords[3];
     Vec2f texture_coords[3];
+    Vec3f vertexNormals[3];
+    Vec3f world_coords[3];
     Vec3f n;
 
     for (int j = 0; j < 3; j++) {
@@ -85,7 +96,7 @@ int main(int argc, char** argv) {
       a[2][0] = v.z;
       a[3][0] = 1.f;
 
-      a = projectionMatrix * a;
+      a = ViewProjection * ModelView * a;
 
       screen_coords[j] =
           Vec3i(((v.x / (float)a[3][0]) + 1.) * WIDTH / 2.,
@@ -93,9 +104,7 @@ int main(int argc, char** argv) {
 
       texture_coords[j] = model->textCoord(texture[j]);
 
-      // we get the xy part of our world_coords
-      // screen_coords[j] =
-      // Vec3i((v.x + 1.) * WIDTH / 2., (v.y + 1.) * HEIGHT / 2., v.z);
+      vertexNormals[j] = model->vertexNomal(vertexNormalsId[j]);
 
       world_coords[j] = v;
     }
@@ -105,14 +114,12 @@ int main(int argc, char** argv) {
 
     n.normalize();
 
-    float intensity = std::max(lightCoords * n, 0.f);
-
-    Color shadedColor =
-        Color(intensity * 255, intensity * 255, intensity * 255);
+    float intensity = std::max(cameraViewDir * n, 0.f);
 
     if (intensity > 0.)
+
       drawTriangle(screen_coords, texture_coords, z_buffer, renderer,
-                   shadedColor);
+                   vertexNormals);
   }
 
   bool running = true;
@@ -216,9 +223,7 @@ void drawTriangle(Vec2i t0, Vec2i t1, Vec2i t2, SDL_Renderer* renderer,
 */
 
 void drawTriangle(Vec3i points[], Vec2f texture_coords[], float z_buffer[],
-                  SDL_Renderer* renderer, Color color) {
-  SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
-
+                  SDL_Renderer* renderer, Vec3f vertexNormals[]) {
   Vec2i bboxmin(WIDTH, HEIGHT);
   Vec2i bboxmax(0, 0);
   Vec2i clamp(WIDTH, HEIGHT);
@@ -258,9 +263,22 @@ void drawTriangle(Vec3i points[], Vec2f texture_coords[], float z_buffer[],
             texture.get(text_Coord.x * texture.get_width(),
                         text_Coord.y * texture.get_height());
 
-        SDL_SetRenderDrawColor(renderer, textureColor[2] * color.r / 255,
-                               textureColor[1] * color.g / 255,
-                               textureColor[0] * color.b / 255, 1);
+        Vec3f normal = vertexNormals[0] * barycentric.x +
+                       vertexNormals[1] * barycentric.y +
+                       vertexNormals[2] * barycentric.z;
+
+        float intensity = normal * lightDirection;
+
+        /*
+                SDL_SetRenderDrawColor(renderer, textureColor[2] * color.r /
+           255, textureColor[1] * color.g / 255, textureColor[0] * color.b /
+           255, 1);
+                */
+
+        TGAColor shadedColor = textureColor * intensity;
+
+        SDL_SetRenderDrawColor(renderer, textureColor[2], textureColor[1],
+                               textureColor[0], 1);
 
         SDL_RenderDrawPoint(renderer, P.x, HEIGHT - P.y);
       }
@@ -278,4 +296,22 @@ Vec3f getBarycentric(Vec3i vertex[], Vec3i point) {
   if (abs(u.z) < 1) return Vec3f(-1, 1, 1);
 
   return Vec3f(1 - (u.x / u.z + u.y / u.z), u.x / u.z, u.y / u.z);
+}
+
+void lookAt(Vec3f center, Vec3f eye, Vec3f up) {
+  Vec3f z = (center - eye).normalize();
+  Vec3f x = (z ^ up).normalize();
+  Vec3f y = (x ^ z).normalize();
+
+  Matrix Minv = Matrix::identity(4);
+  Matrix Traslation = Matrix::identity(4);
+
+  for (int i = 0; i < 3; i++) {
+    Minv[0][i] = x[i];
+    Minv[1][i] = y[i];
+    Minv[2][i] = z[i];
+    Traslation[i][3] = -eye[i];
+  }
+
+  ModelView = Minv * Traslation;
 }
