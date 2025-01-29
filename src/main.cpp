@@ -16,12 +16,12 @@ struct Color {
 
 const int HEIGHT = 700;
 const int WIDTH = 700;
-const int depth = 255;
+const int DEPTH = 255;
 
 Model* model = NULL;
 float* z_buffer = NULL;
 TGAImage texture = TGAImage();
-Vec3f lightDirection = Vec3f(1, -1, -1).normalize();
+Vec3f lightDirection = Vec3f(1, -1, 1).normalize();
 Vec3f eye(1, 1, 3);
 Vec3f center(0, 0, 0);
 
@@ -52,7 +52,6 @@ void drawTriangle(Vec3i points[], Vec2f texture_coords[], float z_buffer[],
   }
 
   Vec3i P;
-
   for (P.y = bboxmin.y; P.y < bboxmax.y; P.y++) {
     for (P.x = bboxmin.x; P.x < bboxmax.x; P.x++) {
       Vec3f barycentric = getBarycentric(points, P);
@@ -98,7 +97,7 @@ void drawTriangle(Vec3i points[], Vec2f texture_coords[], float z_buffer[],
 }
 
 Matrix lookAt(Vec3f center, Vec3f eye, Vec3f up) {
-  Vec3f z = (center - eye).normalize();
+  Vec3f z = (eye - center).normalize();
   Vec3f x = (z ^ up).normalize();
   Vec3f y = (x ^ z).normalize();
 
@@ -165,7 +164,7 @@ int main(int argc, char** argv) {
 
         screen_coords[j] =
             Vec3i((v.x + 1.) * WIDTH / 2., (v.y + 1.) * HEIGHT / 2.,
-                  (v.z + 1.) * depth / 2.);
+                  (v.z + 1.) * DEPTH / 2.);
 
         intensity[j] = lightDirection * model->vertexNomal(vertexNormalsId[j]);
         texture_coords[j] = model->textCoord(texture[j]);
