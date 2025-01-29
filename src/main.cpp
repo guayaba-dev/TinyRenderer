@@ -114,6 +114,20 @@ Matrix lookAt(Vec3f center, Vec3f eye, Vec3f up) {
   return Minv * Traslation;
 }
 
+Matrix viewPort(int w, int h, int x, int y) {
+  Matrix result = Matrix::identity(4);
+
+  result[0][3] = x + w / 2.f;
+  result[1][3] = y + h / 2.f;
+  result[2][3] = DEPTH / 2.f;
+
+  result[0][0] = w / 2.f;
+  result[1][1] = h / 2.f;
+  result[2][2] = DEPTH / 2.f;
+
+  return result;
+}
+
 int main(int argc, char** argv) {
   if (2 == argc) {
     model = new Model(argv[1]);
@@ -141,6 +155,7 @@ int main(int argc, char** argv) {
   {  // draw model Logic
     Matrix Projection = Matrix::identity(4);
     Matrix ModelView = lookAt(center, eye, Vec3f(0., 1., 0.));
+    Matrix ViewPort = viewPort(WIDTH, HEIGHT, 0, 0);
     Projection[3][2] = -1 / (center - eye).norm();
 
     for (int i = 0; i < model->nfaces(); i++) {
@@ -158,13 +173,11 @@ int main(int argc, char** argv) {
 
         Matrix a(v);
 
-        a = Projection * ModelView * a;
+        a = ViewPort * Projection * ModelView * a;
 
         v = Vec3f(a);
 
-        screen_coords[j] =
-            Vec3i((v.x + 1.) * WIDTH / 2., (v.y + 1.) * HEIGHT / 2.,
-                  (v.z + 1.) * DEPTH / 2.);
+        screen_coords[j] = Vec3i(a);
 
         intensity[j] = lightDirection * model->vertexNomal(vertexNormalsId[j]);
         texture_coords[j] = model->textCoord(texture[j]);
