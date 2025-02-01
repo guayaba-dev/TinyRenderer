@@ -10,10 +10,10 @@
 
 Model::Model(const char *filename)
     : verts_(),
-      faces_(),
       tex_coords_(),
-      textures_(),
       vertexNomals(),
+      faces_(),
+      textures_(),
       vertexNomalsIds_() {
   std::ifstream in;
   in.open(filename, std::ifstream::in);

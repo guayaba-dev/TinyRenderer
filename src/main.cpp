@@ -1,5 +1,6 @@
+#include <SDL2/SDL_render.h>
+
 #include <cstddef>
-#include <iostream>
 #include <limits>
 
 #include "SDL2/SDL.h"
@@ -23,7 +24,7 @@ float* z_buffer = NULL;
 TGAImage texture = TGAImage();
 Vec3f lightDirection = Vec3f(1, -1, 1).normalize();
 Vec3f eye(1, 1, 3);
-Vec3f center(0, 0, 0);
+Vec3f center(0, 1, 0);
 
 Vec3f getBarycentric(Vec3i vertex[], Vec3i point) {
   Vec3f x_vertex = Vec3f(vertex[1].x - vertex[0].x, vertex[2].x - vertex[0].x,
@@ -166,7 +167,6 @@ int main(int argc, char** argv) {
       Vec3i screen_coords[3];
       Vec2f texture_coords[3];
       float intensity[3];
-      Vec3f world_coords[3];
 
       for (int j = 0; j < 3; j++) {
         Vec3f v = model->vert(face[j]);
@@ -206,6 +206,7 @@ int main(int argc, char** argv) {
     SDL_Delay(16);
   }
 
+  SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
 
