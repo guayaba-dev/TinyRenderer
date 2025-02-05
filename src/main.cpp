@@ -1,19 +1,12 @@
 #include <SDL2/SDL_render.h>
 
-#include <cstddef>
 #include <limits>
 
 #include "SDL2/SDL.h"
 #include "geometry.h"
+#include "gl.h"
 #include "model.h"
 #include "tgaimage.h"
-
-struct Color {
-  int r;
-  int g;
-  int b;
-  Color(const float& r, const float& g, const float& b) : r(r), g(g), b(b) {};
-};
 
 const int HEIGHT = 700;
 const int WIDTH = 700;
@@ -21,121 +14,65 @@ const int DEPTH = 255;
 
 Model* model = NULL;
 float* z_buffer = NULL;
-TGAImage texture = TGAImage();
 Vec3f lightDirection = Vec3f(1, -1, 1).normalize();
 Vec3f eye(1, 1, 3);
 Vec3f center(0, 1, 0);
 
-Vec3f getBarycentric(Vec3i vertex[], Vec3i point) {
-  Vec3f x_vertex = Vec3f(vertex[1].x - vertex[0].x, vertex[2].x - vertex[0].x,
-                         vertex[0].x - point.x);
-  Vec3f y_vertex = Vec3f(vertex[1].y - vertex[0].y, vertex[2].y - vertex[0].y,
-                         vertex[0].y - point.y);
+struct TexturingShader : public IShader {
+  TGAImage texture;
+  Vec2f texture_coords[3];
+  float intensity[3];
 
-  Vec3f u = x_vertex ^ y_vertex;
-  if (abs(u.z) < 1) return Vec3f(-1, 1, 1);
+  virtual Vec3f vertex(int face, int idVert) override {
+    Vec3f v = model->vert(model->face(face)[idVert]);
 
-  return Vec3f(1 - (u.x / u.z + u.y / u.z), u.x / u.z, u.y / u.z);
-}
+    Matrix a(v);
 
-void drawTriangle(Vec3i points[], Vec2f texture_coords[], float z_buffer[],
-                  SDL_Renderer* renderer, float intensities[]) {
-  Vec2i bboxmin(WIDTH, HEIGHT);
-  Vec2i bboxmax(0, 0);
-  Vec2i clamp(WIDTH, HEIGHT);
+    a = ViewPort * Projection * ModelView * a;
 
-  for (int i = 0; i < 3; i++) {
-    bboxmin.x = std::max(0, std::min(bboxmin.x, points[i].x));
-    bboxmin.y = std::max(0, std::min(bboxmin.y, points[i].y));
+    v = Vec3f(a);
 
-    bboxmax.x = std::min(clamp.x, std::max(bboxmax.x, points[i].x));
-    bboxmax.y = std::min(clamp.y, std::max(bboxmax.y, points[i].y));
+    intensity[idVert] =
+        lightDirection *
+        model->vertexNomal(model->vertexNomalsIds(face)[idVert]);
+
+    texture_coords[idVert] = model->textCoord(model->texture(face)[idVert]);
+
+    return v;
   }
 
-  Vec3i P;
-  for (P.y = bboxmin.y; P.y < bboxmax.y; P.y++) {
-    for (P.x = bboxmin.x; P.x < bboxmax.x; P.x++) {
-      Vec3f barycentric = getBarycentric(points, P);
+  virtual bool fragment(Vec3f bar, TGAColor& color) override {
+    Vec2f text_Coord = Vec2f(0, 0);
 
-      if (barycentric.x < 0. || barycentric.y < 0. || barycentric.z < 0.)
-        continue;  // out of triangleBounds
-
-      P.z = 0;
-
-      // z coords aproximation
-      for (int i = 0; i < 3; i++) {
-        P.z = P.z + points[i].z * barycentric[i];
-      }
-
-      if (z_buffer[P.x + P.y * WIDTH] < P.z) {
-        z_buffer[P.x + P.y * WIDTH] = P.z;
-
-        Vec2f text_Coord = Vec2f(0, 0);
-
-        for (int i = 0; i < 3; i++) {
-          text_Coord = text_Coord + texture_coords[i] * barycentric[i];
-        }
-
-        TGAColor textureColor =
-            texture.get(text_Coord.x * texture.get_width(),
-                        text_Coord.y * texture.get_height());
-
-        float intensity = 0;
-
-        for (int i = 0; i < 3; i++) {
-          intensity = intensity + intensities[i] * barycentric[i];
-        }
-
-        TGAColor shadedColor = textureColor * intensity;
-
-        SDL_SetRenderDrawColor(renderer, shadedColor[2], shadedColor[1],
-                               shadedColor[0], 1);
-
-        SDL_RenderDrawPoint(renderer, P.x, HEIGHT - P.y);
-      }
+    for (int i = 0; i < 3; i++) {
+      text_Coord = text_Coord + texture_coords[i] * bar[i];
     }
+    TGAColor textureColor = texture.get(text_Coord.x * texture.get_width(),
+                                        text_Coord.y * texture.get_height());
+
+    float intensityBar = 0;
+
+    for (int i = 0; i < 3; i++) {
+      intensityBar = intensityBar + intensity[i] * bar[i];
+    }
+
+    TGAColor shadedColor = textureColor * intensityBar;
+
+    color = shadedColor;
+
+    return false;
   }
-}
+};
 
-Matrix lookAt(Vec3f center, Vec3f eye, Vec3f up) {
-  Vec3f z = (eye - center).normalize();
-  Vec3f x = (z ^ up).normalize();
-  Vec3f y = (x ^ z).normalize();
-
-  Matrix Minv = Matrix::identity(4);
-  Matrix Traslation = Matrix::identity(4);
-
-  for (int i = 0; i < 3; i++) {
-    Minv[0][i] = x[i];
-    Minv[1][i] = y[i];
-    Minv[2][i] = z[i];
-    Traslation[i][3] = -center[i];
-  }
-
-  return Minv * Traslation;
-}
-
-Matrix viewPort(int w, int h, int x, int y) {
-  Matrix result = Matrix::identity(4);
-
-  result[0][3] = x + w / 2.f;
-  result[1][3] = y + h / 2.f;
-  result[2][3] = DEPTH / 2.f;
-
-  result[0][0] = w / 2.f;
-  result[1][1] = h / 2.f;
-  result[2][2] = DEPTH / 2.f;
-
-  return result;
-}
+TexturingShader shader;
 
 int main(int argc, char** argv) {
   if (2 == argc) {
     model = new Model(argv[1]);
   } else {
     model = new Model("obj/african_head.obj");
-    texture.read_tga_file("texture/african_head_diffuse.tga");
-    texture.flip_vertically();
+    shader.texture.read_tga_file("texture/african_head_diffuse.tga");
+    shader.texture.flip_vertically();
   }
 
   z_buffer = new float[WIDTH * HEIGHT];
@@ -154,37 +91,22 @@ int main(int argc, char** argv) {
   }
 
   {  // draw model Logic
-    Matrix Projection = Matrix::identity(4);
-    Matrix ModelView = lookAt(center, eye, Vec3f(0., 1., 0.));
-    Matrix ViewPort = viewPort(WIDTH, HEIGHT, 0, 0);
-    Projection[3][2] = -1 / (center - eye).norm();
+    lookat(center, eye, Vec3f(0., 1., 0.));
+    viewport(WIDTH, HEIGHT, 0, 0);
+    projection(-1.f / (eye - center).norm());
 
     for (int i = 0; i < model->nfaces(); i++) {
       std::vector<int> face = model->face(i);
       std::vector<int> texture = model->texture(i);
       std::vector<int> vertexNormalsId = model->vertexNomalsIds(i);
 
-      Vec3i screen_coords[3];
-      Vec2f texture_coords[3];
-      float intensity[3];
-
+      Vec3f screen_coords[3];
       for (int j = 0; j < 3; j++) {
-        Vec3f v = model->vert(face[j]);
-
-        Matrix a(v);
-
-        a = ViewPort * Projection * ModelView * a;
-
-        v = Vec3f(a);
-
-        screen_coords[j] = Vec3i(a);
-
-        intensity[j] = lightDirection * model->vertexNomal(vertexNormalsId[j]);
-        texture_coords[j] = model->textCoord(texture[j]);
+        screen_coords[j] = shader.vertex(i, j);
       }
 
-      drawTriangle(screen_coords, texture_coords, z_buffer, renderer,
-                   intensity);
+      drawTriangle(screen_coords, z_buffer, renderer, shader,
+                   Vec2f(WIDTH, HEIGHT));
     }
   }
 
