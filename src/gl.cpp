@@ -1,7 +1,5 @@
 #include "gl.h"
 
-#include <iostream>
-
 #include "geometry.h"
 #include "tgaimage.h"
 

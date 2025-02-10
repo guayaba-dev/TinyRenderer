@@ -15,8 +15,8 @@ const int DEPTH = 255;
 Model* model = NULL;
 float* z_buffer = NULL;
 Vec3f lightDirection = Vec3f(1, -1, 1).normalize();
-Vec3f eye(1, 1, 3);
-Vec3f center(0, 1, 0);
+Vec3f eye(1, 1, -3);
+Vec3f center(0, 0, 0);
 
 struct TexturingShader : public IShader {
   TGAImage texture;
@@ -28,9 +28,7 @@ struct TexturingShader : public IShader {
 
     Matrix a(v);
 
-    a = ViewPort * Projection * ModelView * a;
-
-    v = Vec3f(a);
+    v = Vec3f(ViewPort * Projection * ModelView * a);
 
     intensity[idVert] =
         lightDirection *
@@ -56,7 +54,23 @@ struct TexturingShader : public IShader {
       intensityBar = intensityBar + intensity[i] * bar[i];
     }
 
+    // the shader looks coller with this block
+    if (intensityBar > .85)
+      intensityBar = 1;
+    else if (intensityBar > .60)
+      intensityBar = .80;
+    else if (intensityBar > .45)
+      intensityBar = .60;
+    else if (intensityBar > .30)
+      intensityBar = .45;
+    else if (intensityBar > .15)
+      intensityBar = .30;
+    else
+      intensityBar = 0;
+
     TGAColor shadedColor = textureColor * intensityBar;
+
+    // TGAColor shadedColor = TGAColor(255, 155, 0) * intensityBar;
 
     color = shadedColor;
 
@@ -96,10 +110,6 @@ int main(int argc, char** argv) {
     projection(-1.f / (eye - center).norm());
 
     for (int i = 0; i < model->nfaces(); i++) {
-      std::vector<int> face = model->face(i);
-      std::vector<int> texture = model->texture(i);
-      std::vector<int> vertexNormalsId = model->vertexNomalsIds(i);
-
       Vec3f screen_coords[3];
       for (int j = 0; j < 3; j++) {
         screen_coords[j] = shader.vertex(i, j);
