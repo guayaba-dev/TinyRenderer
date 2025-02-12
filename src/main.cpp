@@ -25,55 +25,28 @@ struct TexturingShader : public IShader {
 
   virtual Vec3f vertex(int face, int idVert) override {
     Vec3f v = model->vert(model->face(face)[idVert]);
-
     Matrix a(v);
-
     v = Vec3f(ViewPort * Projection * ModelView * a);
-
     intensity[idVert] =
         lightDirection *
         model->vertexNomal(model->vertexNomalsIds(face)[idVert]);
-
     texture_coords[idVert] = model->textCoord(model->texture(face)[idVert]);
-
     return v;
   }
 
   virtual bool fragment(Vec3f bar, TGAColor& color) override {
     Vec2f text_Coord = Vec2f(0, 0);
-
     for (int i = 0; i < 3; i++) {
       text_Coord = text_Coord + texture_coords[i] * bar[i];
     }
     TGAColor textureColor = texture.get(text_Coord.x * texture.get_width(),
                                         text_Coord.y * texture.get_height());
-
     float intensityBar = 0;
-
     for (int i = 0; i < 3; i++) {
       intensityBar = intensityBar + intensity[i] * bar[i];
     }
-
-    // the shader looks coller with this block
-    if (intensityBar > .85)
-      intensityBar = 1;
-    else if (intensityBar > .60)
-      intensityBar = .80;
-    else if (intensityBar > .45)
-      intensityBar = .60;
-    else if (intensityBar > .30)
-      intensityBar = .45;
-    else if (intensityBar > .15)
-      intensityBar = .30;
-    else
-      intensityBar = 0;
-
     TGAColor shadedColor = textureColor * intensityBar;
-
-    // TGAColor shadedColor = TGAColor(255, 155, 0) * intensityBar;
-
     color = shadedColor;
-
     return false;
   }
 };

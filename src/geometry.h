@@ -179,6 +179,84 @@ class Matrix {
       std::cerr << '\n';
     }
   }
+
+  Matrix cofactor(int p, int q, int dimension) {
+    assert(this->getRows() == this->getCollums());
+
+    // last collum and row end up in zero
+    Matrix result(dimension, dimension);
+
+    int i = 0;
+    int j = 0;
+    for (int row = 0; row < dimension; row++) {
+      for (int collum = 0; collum < dimension; collum++) {
+        if (row == p || collum == q) continue;
+
+        result[i][j++] = this->m[row][collum];
+        if (j == dimension - 1) {
+          j = 0;
+          i++;
+        }
+      }
+    }
+    return result;
+  }
+
+  float getDeterminant(int dimensions) {
+    assert(this->getCollums() == this->getRows());
+
+    if (dimensions == 1) return this->m[0][0];
+
+    float determinant = 0.f;
+
+    Matrix cofac(dimensions, dimensions);
+
+    int sing = 1;
+    for (int f = 0; f < getCollums(); f++) {
+      cofac = this->cofactor(0, f, dimensions);
+      determinant +=
+          sing * this->m[0][f] * cofac.getDeterminant(dimensions - 1);
+      sing = -sing;
+    }
+
+    return determinant;
+  };
+
+  Matrix adjunt() {
+    int dimensions = this->getRows();
+
+    Matrix result(dimensions, dimensions);
+
+    for (int i = 0; i < dimensions; i++) {
+      for (int j = 0; j < dimensions; j++) {
+        int sing = ((i + j) % 2 == 0) ? 1 : -1;
+
+        result[i][j] =
+            this->cofactor(i, j, dimensions).getDeterminant(dimensions - 1) *
+            sing;
+      }
+    }
+
+    return result;
+  }
+
+  Matrix inverse() {
+    float determinant = 0.f;
+
+    determinant = this->getDeterminant(getRows());
+
+    assert(determinant == 0.f);
+
+    Matrix inverse = this->adjunt();
+
+    for (int i = 0; i < getRows(); i++) {
+      for (int j = 0; j < getCollums(); j++) {
+        inverse[i][j] = inverse[i][j] / determinant;
+      }
+    }
+
+    return inverse;
+  }
 };
 
 #endif  //__GEOMETRY_H__
