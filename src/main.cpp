@@ -1,5 +1,7 @@
 #include <SDL2/SDL_render.h>
 
+#include <algorithm>
+#include <iostream>
 #include <limits>
 
 #include "SDL2/SDL.h"
@@ -14,38 +16,76 @@ const int DEPTH = 255;
 
 Model* model = NULL;
 float* z_buffer = NULL;
-Vec3f lightDirection = Vec3f(1, -1, 1).normalize();
-Vec3f eye(1, 1, -3);
+Vec3f lightDirection = Vec3f(1, 1, 1).normalize();
+Vec3f eye(0, -1, 3);
 Vec3f center(0, 0, 0);
 
 struct TexturingShader : public IShader {
-  TGAImage texture;
-  Vec2f texture_coords[3];
+  TGAImage uniform_texture;
+  Vec2f varying_texture_coords[3];
   float intensity[3];
+  Vec3f normals[3];
+
+  // Model view matrix
+  Matrix uniform_MV = Matrix::identity(4);
+
+  // Model view inverse traspose matrix
+  Matrix uniform_MVIT = Matrix::identity(4);
 
   virtual Vec3f vertex(int face, int idVert) override {
     Vec3f v = model->vert(model->face(face)[idVert]);
     Matrix a(v);
     v = Vec3f(ViewPort * Projection * ModelView * a);
+
     intensity[idVert] =
         lightDirection *
         model->vertexNomal(model->vertexNomalsIds(face)[idVert]);
-    texture_coords[idVert] = model->textCoord(model->texture(face)[idVert]);
+
+    normals[idVert] = model->vertexNomal(model->vertexNomalsIds(face)[idVert]);
+
+    varying_texture_coords[idVert] =
+        model->textCoord(model->texture(face)[idVert]);
+
     return v;
   }
 
   virtual bool fragment(Vec3f bar, TGAColor& color) override {
     Vec2f text_Coord = Vec2f(0, 0);
+    Vec3f normal = Vec3f(0, 0, 0);
+
     for (int i = 0; i < 3; i++) {
-      text_Coord = text_Coord + texture_coords[i] * bar[i];
+      text_Coord = text_Coord + varying_texture_coords[i] * bar[i];
     }
-    TGAColor textureColor = texture.get(text_Coord.x * texture.get_width(),
-                                        text_Coord.y * texture.get_height());
-    float intensityBar = 0;
+
+    for (int i = 0; i < 3; i++) {
+      normal = normal + normals[i] * bar[i];
+    }
+
+    float intensityBar = 0.f;
+
     for (int i = 0; i < 3; i++) {
       intensityBar = intensityBar + intensity[i] * bar[i];
     }
-    TGAColor shadedColor = textureColor * intensityBar;
+
+    TGAColor textureColor =
+        uniform_texture.get(text_Coord.x * uniform_texture.get_width(),
+                            text_Coord.y * uniform_texture.get_height());
+
+    Matrix normalMatrix = Matrix(normal);
+    Matrix lightDirMatrix = Matrix(lightDirection);
+    Vec3f l = Vec3f(uniform_MV * lightDirMatrix);
+    Vec3f n = Vec3f(uniform_MVIT * normalMatrix);
+    Vec3f r = (n * (n * l * 2.f) - l).normalize();  // reflected light
+
+    float spec = pow(std::max(r.z, 0.0f), 10);
+
+    TGAColor shadedColor;
+
+    for (int i = 0; i < 3; i++)
+      shadedColor[i] = std::max(
+          0.f, std::min<float>(5 + textureColor[i] * (intensityBar + .6 * spec),
+                               255));
+
     color = shadedColor;
     return false;
   }
@@ -58,8 +98,8 @@ int main(int argc, char** argv) {
     model = new Model(argv[1]);
   } else {
     model = new Model("obj/african_head.obj");
-    shader.texture.read_tga_file("texture/african_head_diffuse.tga");
-    shader.texture.flip_vertically();
+    shader.uniform_texture.read_tga_file("texture/african_head_diffuse.tga");
+    shader.uniform_texture.flip_vertically();
   }
 
   z_buffer = new float[WIDTH * HEIGHT];
@@ -69,6 +109,7 @@ int main(int argc, char** argv) {
 
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
+
   {  // window set up
     SDL_Init(SDL_INIT_VIDEO);
     SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
@@ -81,6 +122,9 @@ int main(int argc, char** argv) {
     lookat(center, eye, Vec3f(0., 1., 0.));
     viewport(WIDTH, HEIGHT, 0, 0);
     projection(-1.f / (eye - center).norm());
+
+    shader.uniform_MV = ModelView;
+    shader.uniform_MVIT = ModelView.inverse().transpose();
 
     for (int i = 0; i < model->nfaces(); i++) {
       Vec3f screen_coords[3];

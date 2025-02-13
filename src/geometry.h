@@ -237,7 +237,7 @@ class Matrix {
       }
     }
 
-    return result;
+    return result.transpose();
   }
 
   Matrix inverse() {
@@ -245,7 +245,7 @@ class Matrix {
 
     determinant = this->getDeterminant(getRows());
 
-    assert(determinant == 0.f);
+    assert(determinant != 0.f);
 
     Matrix inverse = this->adjunt();
 
