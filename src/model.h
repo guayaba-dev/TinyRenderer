@@ -4,9 +4,11 @@
 #include <vector>
 
 #include "geometry.h"
+#include "tgaimage.h"
 
 class Model {
  private:
+  TGAImage diffusemap_;
   std::vector<Vec3f> verts_;
   std::vector<Vec2f> tex_coords_;
   std::vector<Vec3f> vertexNomals;
@@ -25,6 +27,8 @@ class Model {
   std::vector<int> face(int idx);
   std::vector<int> texture(int tidx);
   std::vector<int> vertexNomalsIds(int nidx);
+  void load_texture(std::string filename, const char *suffix, TGAImage &img);
+  TGAColor getDiffuse(Vec2f uvf);
 };
 
 #endif  //__MODEL_H__

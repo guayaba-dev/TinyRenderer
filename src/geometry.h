@@ -141,7 +141,7 @@ class Matrix {
     return result;
   }
 
-  Matrix operator*(Matrix& a) {
+  Matrix operator*(const Matrix& a) {
     assert(collums == a.rows);
 
     Matrix result(rows, a.collums);
@@ -150,7 +150,7 @@ class Matrix {
       for (int j = 0; j < a.collums; j++) {
         result[i][j] = 0.f;
         for (int k = 0; k < collums; k++) {
-          result[i][j] += m[i][k] * a[k][j];
+          result[i][j] += m[i][k] * a.m[k][j];
         }
       }
     }

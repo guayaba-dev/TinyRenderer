@@ -10,9 +10,9 @@ extern Matrix ViewPort;
 struct IShader {
   virtual ~IShader();
 
-  virtual Vec3f vertex(int face, int idVert) = 0;
+  virtual Vec3f vertex(int face, int idVert) = 0;  // Vertex processor
 
-  virtual bool fragment(Vec3f bar, TGAColor& color) = 0;
+  virtual bool fragment(Vec3f bar, TGAColor& color) = 0;  // pixel processor
 };
 
 void viewport(int w, int h, int x, int y);

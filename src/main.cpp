@@ -21,7 +21,6 @@ Vec3f eye(0, -1, 3);
 Vec3f center(0, 0, 0);
 
 struct TexturingShader : public IShader {
-  TGAImage uniform_texture;
   Vec2f varying_texture_coords[3];
   float intensity[3];
   Vec3f normals[3];
@@ -34,8 +33,8 @@ struct TexturingShader : public IShader {
 
   virtual Vec3f vertex(int face, int idVert) override {
     Vec3f v = model->vert(model->face(face)[idVert]);
-    Matrix a(v);
-    v = Vec3f(ViewPort * Projection * ModelView * a);
+
+    v = Vec3f(ViewPort * Projection * ModelView * Matrix(v));
 
     intensity[idVert] =
         lightDirection *
@@ -67,9 +66,7 @@ struct TexturingShader : public IShader {
       intensityBar = intensityBar + intensity[i] * bar[i];
     }
 
-    TGAColor textureColor =
-        uniform_texture.get(text_Coord.x * uniform_texture.get_width(),
-                            text_Coord.y * uniform_texture.get_height());
+    TGAColor textureColor = model->getDiffuse(text_Coord);
 
     Matrix normalMatrix = Matrix(normal);
     Matrix lightDirMatrix = Matrix(lightDirection);
@@ -98,8 +95,6 @@ int main(int argc, char** argv) {
     model = new Model(argv[1]);
   } else {
     model = new Model("obj/african_head.obj");
-    shader.uniform_texture.read_tga_file("texture/african_head_diffuse.tga");
-    shader.uniform_texture.flip_vertically();
   }
 
   z_buffer = new float[WIDTH * HEIGHT];

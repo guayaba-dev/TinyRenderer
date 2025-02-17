@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "geometry.h"
+#include "tgaimage.h"
 
 Model::Model(const char *filename)
     : verts_(),
@@ -64,6 +65,25 @@ Model::Model(const char *filename)
     }
   }
   std::cerr << "# v# " << verts_.size() << " f# " << faces_.size() << std::endl;
+  load_texture(filename, "_diffuse.tga", diffusemap_);
+}
+
+void Model::load_texture(std::string filename, const char *suffix,
+                         TGAImage &img) {
+  std::string texfile(filename);
+  size_t dot = texfile.find_last_of(".");
+  if (dot != std::string::npos) {
+    texfile = texfile.substr(0, dot) + std::string(suffix);
+    std::cerr << "texture file " << texfile << " loading "
+              << (img.read_tga_file(texfile.c_str()) ? "ok" : "failed")
+              << std::endl;
+    img.flip_vertically();
+  }
+}
+
+TGAColor Model::getDiffuse(Vec2f uvf) {
+  Vec2i uv(uvf.x * diffusemap_.get_width(), uvf.y * diffusemap_.get_height());
+  return diffusemap_.get(uv.x, uv.y);
 }
 
 Model::~Model() {}
