@@ -66,6 +66,7 @@ Model::Model(const char *filename)
   }
   std::cerr << "# v# " << verts_.size() << " f# " << faces_.size() << std::endl;
   load_texture(filename, "_diffuse.tga", diffusemap_);
+  load_texture(filename, "_nm_tangent.tga", normalmap_);
 }
 
 void Model::load_texture(std::string filename, const char *suffix,
@@ -84,6 +85,13 @@ void Model::load_texture(std::string filename, const char *suffix,
 TGAColor Model::getDiffuse(Vec2f uvf) {
   Vec2i uv(uvf.x * diffusemap_.get_width(), uvf.y * diffusemap_.get_height());
   return diffusemap_.get(uv.x, uv.y);
+}
+
+Vec3f Model::getNormal(Vec2f uvf) {
+  Vec2i uv(uvf.x * normalmap_.get_width(), uvf.y * normalmap_.get_height());
+  TGAColor normalmap_Color = normalmap_.get(uv.x, uv.y);
+  return Vec3f(normalmap_Color[0] / 255.f, normalmap_Color[1] / 255.f,
+               normalmap_Color[2] / 255.f);
 }
 
 Model::~Model() {}

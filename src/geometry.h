@@ -30,6 +30,7 @@ struct Vec2 {
   };
   Vec2() : u(0), v(0) {}
   Vec2(t _u, t _v) : u(_u), v(_v) {}
+  Vec2<t>(Matrix m);
   inline Vec2<t> operator+(const Vec2<t>& V) const {
     return Vec2<t>(u + V.u, v + V.v);
   }
@@ -37,6 +38,9 @@ struct Vec2 {
     return Vec2<t>(u - V.u, v - V.v);
   }
   inline Vec2<t> operator*(float f) const { return Vec2<t>(u * f, v * f); }
+
+  inline t& operator[](const int i) { return raw[i]; }
+
   template <class>
   friend std::ostream& operator<<(std::ostream& s, Vec2<t>& v);
 };
@@ -71,6 +75,7 @@ struct Vec3 {
   inline t operator*(const Vec3<t>& v) const {
     return x * v.x + y * v.y + z * v.z;
   }
+
   inline t& operator[](const int i) { return raw[i]; }
 
   float norm() const { return std::sqrt(x * x + y * y + z * z); }
@@ -178,6 +183,29 @@ class Matrix {
       }
       std::cerr << '\n';
     }
+  }
+
+  Vec3f getCollum(int colNum) {
+    assert(getRows() >= 3);
+    Vec3f a;
+    for (int i = 0; i < 3; i++) a[i] = this->m[i][colNum];
+    return a;
+  };
+
+  void setCollum(int colNum, Vec3f vector) {
+    assert(this->rows >= 3);
+    for (int i = 0; i < 3; i++) this->m[i][colNum] = vector[i];
+  }
+
+  void setCollum(int colNum, Vec2f vector) {
+    assert(this->rows >= 2);
+    for (int i = 0; i < 2; i++) this->m[i][colNum] = vector[i];
+  }
+
+  void setCollum(int colNum, Matrix vector) {
+    assert(this->rows >= vector.getRows());
+    for (int i = 0; i < vector.getRows(); i++)
+      this->m[i][colNum] = vector[i][0];
   }
 
   Matrix cofactor(int p, int q, int dimension) {
