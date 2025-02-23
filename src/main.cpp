@@ -29,51 +29,56 @@ struct TexturingShader : public IShader {
 
   virtual Vec3f vertex(int face, int idVert) override {
     Matrix v = ViewPort * Projection * ModelView *
-               Matrix(model->vert(model->face(face)[idVert]));
+               Matrix(model->vert(model->face(face)[idVert]), 1);
 
     Vec3f glVertex = v;
 
-    varying_nrm.setCollum(
-        idVert, uniform_MVIT *
-                    model->vertexNomal(model->vertexNomalsIds(face)[idVert]));
+    varying_nrm.setColumn(
+        idVert,
+        Vec3f(uniform_MVIT *
+              Matrix(model->vertexNomal(model->vertexNomalsIds(face)[idVert]),
+                     0.)));
 
-    varying_uv.setCollum(idVert,
+    varying_uv.setColumn(idVert,
                          model->textCoord(model->texture(face)[idVert]));
 
-    ndc_tri.setCollum(idVert, v);
+    ndc_tri.setColumn(idVert, Vec3f(v));
 
-    varying_tri.setCollum(idVert, glVertex);
+    varying_tri.setColumn(idVert, glVertex);
 
     return glVertex;
   }
 
   virtual bool fragment(Vec3f bar, TGAColor& color) override {
-    Vec2f uvBar = varying_uv * Matrix(bar);
-    Vec3f normalBar = varying_nrm * Matrix(bar);
+    Vec2f uvBar = varying_uv * Matrix(bar, 0);
+    Vec3f normalBar = varying_nrm * Matrix(bar, 0);
 
     TGAColor textureColor = model->getDiffuse(uvBar);
 
     Matrix A = Matrix::identity(4);
 
-    A.setCollum(0, ndc_tri.getCollum(2) - ndc_tri.getCollum(0));
-    A.setCollum(1, ndc_tri.getCollum(1) - ndc_tri.getCollum(0));
-    A.setCollum(2, normalBar);
+    A.setColumn(0, ndc_tri.getColumn(2) - ndc_tri.getColumn(0));
+    A.setColumn(1, ndc_tri.getColumn(1) - ndc_tri.getColumn(0));
+    A.setColumn(2, normalBar);
     A = A.transpose();
-    Matrix AI = A.inverse();
+    Matrix AI(4, 4);
+    A.inverse(AI);
 
-    Vec3f i = AI * Matrix(Vec3f(varying_uv[0][1] - varying_uv[0][0],
-                                varying_uv[0][2] - varying_uv[0][0], 0.f));
+    Vec3f i = AI * Matrix(Vec3f(varying_uv(0, 1) - varying_uv(0, 0),
+                                varying_uv(0, 2) - varying_uv(0, 0), 0.f),
+                          0);
 
-    Vec3f j = AI * Matrix(Vec3f(varying_uv[1][1] - varying_uv[1][0],
-                                varying_uv[1][2] - varying_uv[1][0], 0.f));
+    Vec3f j = AI * Matrix(Vec3f(varying_uv(1, 1) - varying_uv(1, 0),
+                                varying_uv(1, 2) - varying_uv(1, 0), 0.f),
+                          0);
 
     Matrix BTN = Matrix::identity(4);
 
-    BTN.setCollum(0, i.normalize());
-    BTN.setCollum(1, j.normalize());
-    BTN.setCollum(2, normalBar);
+    BTN.setColumn(0, i.normalize());
+    BTN.setColumn(1, j.normalize());
+    BTN.setColumn(2, normalBar);
 
-    Vec3f normalMapped = (BTN * Matrix(model->getNormal(uvBar)));
+    Vec3f normalMapped = (BTN * Matrix(model->getNormal(uvBar), 0));
     TGAColor shadedColor = textureColor * (normalMapped * lightDirection);
     color = shadedColor;
     return false;
@@ -111,7 +116,11 @@ int main(int argc, char** argv) {
     projection(-1.f / (eye - center).norm());
 
     shader.uniform_MV = ModelView;
-    shader.uniform_MVIT = ModelView.inverse().transpose();
+    shader.uniform_MV.output();
+    shader.uniform_MVIT(4, 4);
+    ModelView.inverse(shader.uniform_MVIT);
+    shader.uniform_MVIT.transpose();
+    shader.uniform_MVIT.output();
 
     for (int i = 0; i < model->nfaces(); i++) {
       Vec3f screen_coords[3];

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstddef>
 #include <iostream>
+#include <memory>
 #include <ostream>
 #include <vector>
 
@@ -40,6 +41,7 @@ struct Vec2 {
   inline Vec2<t> operator*(float f) const { return Vec2<t>(u * f, v * f); }
 
   inline t& operator[](const int i) { return raw[i]; }
+  const inline t& operator[](const int i) const { return raw[i]; }
 
   template <class>
   friend std::ostream& operator<<(std::ostream& s, Vec2<t>& v);
@@ -77,6 +79,7 @@ struct Vec3 {
   }
 
   inline t& operator[](const int i) { return raw[i]; }
+  const inline t& operator[](const int i) const { return raw[i]; }
 
   float norm() const { return std::sqrt(x * x + y * y + z * z); }
   Vec3<t>& normalize(t l = 1) {
@@ -105,185 +108,177 @@ std::ostream& operator<<(std::ostream& s, Vec3<t>& v) {
 }
 
 class Matrix {
-  vector<vector<float>> m;
-  int rows;
-  int collums;
+ private:
+  vector<float> m;
+  int rows = 0;
+  int columns = 0;
 
  public:
-  int getRows() { return rows; }
-  int getCollums() { return collums; }
+  const int& getRows() const { return rows; }
+  const int& getColumns() const { return columns; }
 
-  Matrix(const Vec3f v) {
-    m = vector<vector<float>>(4, vector<float>(1, 1.f));
-    this->rows = 4;
-    this->collums = 1;
-
-    m[0][0] = v.x;
-    m[1][0] = v.y;
-    m[2][0] = v.z;
-  }
-
-  Matrix(const int rows = MAX_ALLOC, const int collums = MAX_ALLOC) {
-    m = vector<vector<float>>(rows, vector<float>(collums, 0.f));
+  Matrix(const int rows = MAX_ALLOC, const int columns = MAX_ALLOC) {
+    m = vector<float>(rows * columns, 0.f);
     this->rows = rows;
-    this->collums = collums;
+    this->columns = columns;
   }
 
-  vector<float>& operator[](const int idx) {
-    assert(idx >= 0 && idx < rows);
-    return m[idx];
+  Matrix(const Vec3f& v, int vertex) {
+    m = vector<float>(4, vertex);
+    this->rows = 4;
+    this->columns = 1;
+
+    for (int i = 0; i < 3; i++) {
+      (*this)(i, 0) = v[i];
+    }
   }
 
-  static Matrix identity(int dimensions) {
-    Matrix result(dimensions, dimensions);
+  float& operator()(int row, int col) { return m[row * getColumns() + col]; }
 
-    for (int i = 0; i < dimensions; i++) {
-      for (int j = 0; j < dimensions; j++) {
-        result[i][j] = (i == j) ? 1.f : 0.f;
+  const float& operator()(int row, int col) const {
+    return m[row * getColumns() + col];
+  }
+
+  static Matrix identity(int dimension) {
+    Matrix result(dimension, dimension);
+
+    for (int i = 0; i < result.getRows(); i++) {
+      for (int j = 0; j < result.getColumns(); j++) {
+        if (i != j) continue;
+        result(i, j) = 1.0;
       }
     }
 
     return result;
   }
 
-  Matrix operator*(const Matrix& a) {
-    assert(collums == a.rows);
+  Matrix operator*(const Matrix& a) const {
+    if ((*this).getColumns() != a.getRows()) {
+      (*this).output();
+      a.output();
+    }
 
-    Matrix result(rows, a.collums);
+    assert((*this).getColumns() == a.getRows());
 
-    for (int i = 0; i < rows; i++) {
-      for (int j = 0; j < a.collums; j++) {
-        result[i][j] = 0.f;
-        for (int k = 0; k < collums; k++) {
-          result[i][j] += m[i][k] * a.m[k][j];
+    Matrix result((*this).getRows(), a.getColumns());
+
+    for (int i = 0; i < (*this).getRows(); i++) {
+      for (int j = 0; j < a.getColumns(); j++) {
+        for (int k = 0; k < (*this).getColumns(); k++) {
+          result(i, j) += (*this)(i, k) * a(k, j);
         }
       }
     }
-
     return result;
   }
 
-  Matrix transpose() {
-    Matrix result(collums, rows);
+  Matrix transpose() const {
+    Matrix result((*this).getColumns(), (*this).getRows());
 
-    for (int i = 0; i < rows; i++) {
-      for (int j = 0; j < collums; j++) {
-        result[j][i] = m[i][j];
+    for (int i = 0; i < (*this).getRows(); i++) {
+      for (int j = 0; j < (*this).getColumns(); j++) {
+        result(j, i) = (*this)(i, j);
       }
     }
 
     return result;
   }
 
-  void output() {
-    std::cout << "----------------------------\n";
-    for (int j = 0; j < rows; j++) {
-      for (int i = 0; i < collums; i++) {
-        std::cerr << "[ " << m[j][i] << "] ";
+  void output() const {
+    std::cerr << "----------------------------\n";
+    for (int j = 0; j < (*this).getRows(); j++) {
+      for (int i = 0; i < (*this).columns; i++) {
+        std::cerr << "[ " << (*this)(i, j) << "] ";
       }
       std::cerr << '\n';
     }
   }
 
-  Vec3f getCollum(int colNum) {
-    assert(getRows() >= 3);
-    Vec3f a;
-    for (int i = 0; i < 3; i++) a[i] = this->m[i][colNum];
-    return a;
-  };
+  // TODO: Add vec4
+  void setColumn(const int col, const Vec3f& vector) {
+    assert((*this).getRows() >= 3);
 
-  void setCollum(int colNum, Vec3f vector) {
-    assert(this->rows >= 3);
-    for (int i = 0; i < 3; i++) this->m[i][colNum] = vector[i];
-  }
-
-  void setCollum(int colNum, Vec2f vector) {
-    assert(this->rows >= 2);
-    for (int i = 0; i < 2; i++) this->m[i][colNum] = vector[i];
-  }
-
-  void setCollum(int colNum, Matrix vector) {
-    assert(this->rows >= vector.getRows());
-    for (int i = 0; i < vector.getRows(); i++)
-      this->m[i][colNum] = vector[i][0];
-  }
-
-  Matrix cofactor(int p, int q, int dimension) {
-    assert(this->getRows() == this->getCollums());
-
-    // last collum and row end up in zero
-    Matrix result(dimension, dimension);
-
-    int i = 0;
-    int j = 0;
-    for (int row = 0; row < dimension; row++) {
-      for (int collum = 0; collum < dimension; collum++) {
-        if (row == p || collum == q) continue;
-
-        result[i][j++] = this->m[row][collum];
-        if (j == dimension - 1) {
-          j = 0;
-          i++;
-        }
-      }
+    for (int i = 0; i < 3; i++) {
+      (*this)(i, col) = vector[i];
     }
+  }
+
+  void setColumn(const int col, const Vec2f& vector) {
+    assert((*this).getRows() >= 2);
+
+    for (int i = 0; i < 2; i++) {
+      (*this)(i, col) = vector[i];
+    }
+  }
+
+  // TODO: add vec4
+  Vec3f getColumn(const int col) const {
+    Vec3f result;
+    for (int i = 0; i < 3; i++) result[i] = (*this)(i, col);
     return result;
   }
 
-  float getDeterminant(int dimensions) {
-    assert(this->getCollums() == this->getRows());
+  void getCofac(const int& p, const int& q, Matrix& cofac) const {
+    int row = 0, col = 0;
 
-    if (dimensions == 1) return this->m[0][0];
+    for (int i = 0; i < (*this).getRows(); i++) {
+      if (i == p) continue;
 
-    float determinant = 0.f;
+      for (int j = 0; j < (*this).getColumns(); j++) {
+        if (j == q) continue;
 
-    Matrix cofac(dimensions, dimensions);
+        cofac(row, col++) = (*this)(i, j);
+
+        if (col == cofac.getColumns()) {
+          row++;
+          col = 0;
+        }
+      }
+    }
+  }
+
+  float getDeterminant(const int dimension) {
+    assert((*this).getColumns() == (*this).getRows());
+
+    if (dimension == 1) return (*this)(0, 0);
 
     int sing = 1;
-    for (int f = 0; f < getCollums(); f++) {
-      cofac = this->cofactor(0, f, dimensions);
-      determinant +=
-          sing * this->m[0][f] * cofac.getDeterminant(dimensions - 1);
+    float result = 0.f;
+    Matrix cofac(dimension, dimension);
+
+    for (int f = 0; f < (*this).getColumns(); f++) {
+      getCofac(f, 0, cofac);
+      result += sing * (*this)(f, 0) * cofac.getDeterminant(dimension - 1);
       sing = -sing;
     }
 
-    return determinant;
-  };
-
-  Matrix adjunt() {
-    int dimensions = this->getRows();
-
-    Matrix result(dimensions, dimensions);
-
-    for (int i = 0; i < dimensions; i++) {
-      for (int j = 0; j < dimensions; j++) {
-        int sing = ((i + j) % 2 == 0) ? 1 : -1;
-
-        result[i][j] =
-            this->cofactor(i, j, dimensions).getDeterminant(dimensions - 1) *
-            sing;
-      }
-    }
-
-    return result.transpose();
+    return result;
   }
 
-  Matrix inverse() {
-    float determinant = 0.f;
+  void adjugate(Matrix& adjugate, const float& determinant) {
+    float detInv = 1.0 / determinant;
+    int dimensions = adjugate.getColumns();
+    Matrix cofac(dimensions - 1, dimensions - 1);
+    int sing = 0;
 
-    determinant = this->getDeterminant(getRows());
-
-    assert(determinant != 0.f);
-
-    Matrix inverse = this->adjunt();
-
-    for (int i = 0; i < getRows(); i++) {
-      for (int j = 0; j < getCollums(); j++) {
-        inverse[i][j] = inverse[i][j] / determinant;
+    for (int i = 0; i < adjugate.getRows(); i++) {
+      for (int j = 0; j < adjugate.getColumns(); j++) {
+        sing = ((i + j) % 2 == 0) ? 1 : -1;
+        (*this).getCofac(i, j, cofac);
+        adjugate(i, j) = cofac.getDeterminant(dimensions - 1) * sing * detInv;
       }
     }
+  }
 
-    return inverse;
+  void inverse(Matrix& inverse) {
+    assert((*this).getColumns() == (*this).getRows());
+
+    int dimension = (*this).getColumns();
+    float determinant = (*this).getDeterminant(dimension - 1);
+
+    assert(determinant != 0.0);
+
+    adjugate(inverse, determinant);
   }
 };
 

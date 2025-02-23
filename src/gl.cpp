@@ -77,10 +77,10 @@ void lookat(Vec3f center, Vec3f eye, Vec3f up) {
   Matrix Traslation = Matrix::identity(4);
 
   for (int i = 0; i < 3; i++) {
-    Minv[0][i] = x[i];
-    Minv[1][i] = y[i];
-    Minv[2][i] = z[i];
-    Traslation[i][3] = -center[i];
+    Minv(0, i) = x[i];
+    Minv(1, i) = y[i];
+    Minv(2, i) = z[i];
+    Traslation(i, 3) = -center[i];
   }
 
   ModelView = Minv * Traslation;
@@ -89,18 +89,18 @@ void lookat(Vec3f center, Vec3f eye, Vec3f up) {
 void viewport(int w, int h, int x, int y) {
   Matrix result = Matrix::identity(4);
 
-  result[0][3] = x + w / 2.f;
-  result[1][3] = y + h / 2.f;
-  result[2][3] = 255.f / 2.f;
+  result(0, 3) = x + w / 2.f;
+  result(1, 3) = y + h / 2.f;
+  result(2, 3) = 255.f / 2.f;
 
-  result[0][0] = w / 2.f;
-  result[1][1] = h / 2.f;
-  result[2][2] = 255.f / 2.f;
+  result(0, 0) = w / 2.f;
+  result(1, 1) = h / 2.f;
+  result(2, 2) = 255.f / 2.f;
 
   ViewPort = result;
 }
 
 void projection(float coeff) {
   Projection = Matrix::identity(4);
-  Projection[3][2] = coeff;
+  Projection(3, 2) = coeff;
 }  // coeff = -1/c
