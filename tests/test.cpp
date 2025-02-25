@@ -36,9 +36,43 @@ void testMultiplication() {
   std::cout << "✅ testMultiplication passed!\n";
 }
 
+// TODO: Improve tests
+
+void cofacMatrix() {
+  Matrix A(2, 2);
+
+  A(0, 0) = 2;
+  A(0, 1) = 3;
+  A(1, 0) = 1;
+  A(1, 1) = 4;
+
+  Matrix cofac(1, 1);
+  Matrix adjunt(2, 2);
+  Matrix inverse(2, 2);
+
+  A.output();
+
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 2; j++) {
+      A.getCofac(i, j, cofac);
+      adjunt(i, j) = cofac.getDeterminant(3);
+      cofac.output();
+    }
+  }
+
+  adjunt.output();
+
+  std::cerr << A.getDeterminant(2) << ": Det" << '\n';
+
+  A.inverse(inverse);
+
+  inverse.transpose().output();
+}
+
 int main() {
   testIdentityMatrix();
   testMultiplication();
+  cofacMatrix();
   std::cout << "All tests passed!\n";
   return 0;
 }

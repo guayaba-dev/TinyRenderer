@@ -153,11 +153,6 @@ class Matrix {
   }
 
   Matrix operator*(const Matrix& a) const {
-    if ((*this).getColumns() != a.getRows()) {
-      (*this).output();
-      a.output();
-    }
-
     assert((*this).getColumns() == a.getRows());
 
     Matrix result((*this).getRows(), a.getColumns());
@@ -186,8 +181,8 @@ class Matrix {
 
   void output() const {
     std::cerr << "----------------------------\n";
-    for (int j = 0; j < (*this).getRows(); j++) {
-      for (int i = 0; i < (*this).columns; i++) {
+    for (int i = 0; i < (*this).getRows(); i++) {
+      for (int j = 0; j < (*this).columns; j++) {
         std::cerr << "[ " << (*this)(i, j) << "] ";
       }
       std::cerr << '\n';
@@ -244,11 +239,11 @@ class Matrix {
 
     int sing = 1;
     float result = 0.f;
-    Matrix cofac(dimension, dimension);
+    Matrix cofac(dimension - 1, dimension - 1);
 
     for (int f = 0; f < (*this).getColumns(); f++) {
-      getCofac(f, 0, cofac);
-      result += sing * (*this)(f, 0) * cofac.getDeterminant(dimension - 1);
+      getCofac(0, 0, cofac);
+      result += sing * (*this)(0, f) * cofac.getDeterminant(dimension - 1);
       sing = -sing;
     }
 
@@ -274,7 +269,7 @@ class Matrix {
     assert((*this).getColumns() == (*this).getRows());
 
     int dimension = (*this).getColumns();
-    float determinant = (*this).getDeterminant(dimension - 1);
+    float determinant = (*this).getDeterminant(dimension);
 
     assert(determinant != 0.0);
 

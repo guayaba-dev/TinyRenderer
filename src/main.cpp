@@ -1,5 +1,6 @@
 #include <SDL2/SDL_render.h>
 
+#include <iostream>
 #include <limits>
 
 #include "SDL2/SDL.h"
@@ -50,8 +51,8 @@ struct TexturingShader : public IShader {
   }
 
   virtual bool fragment(Vec3f bar, TGAColor& color) override {
-    Vec2f uvBar = varying_uv * Matrix(bar, 0);
-    Vec3f normalBar = varying_nrm * Matrix(bar, 0);
+    Vec2f uvBar = varying_uv * Matrix(bar, 1);
+    Vec3f normalBar = varying_nrm * Matrix(bar, 1);
 
     TGAColor textureColor = model->getDiffuse(uvBar);
 
@@ -66,11 +67,13 @@ struct TexturingShader : public IShader {
 
     Vec3f i = AI * Matrix(Vec3f(varying_uv(0, 1) - varying_uv(0, 0),
                                 varying_uv(0, 2) - varying_uv(0, 0), 0.f),
-                          0);
+                          1);
 
     Vec3f j = AI * Matrix(Vec3f(varying_uv(1, 1) - varying_uv(1, 0),
                                 varying_uv(1, 2) - varying_uv(1, 0), 0.f),
                           0);
+
+    std::cerr << i << " " << j << '\n';
 
     Matrix BTN = Matrix::identity(4);
 
@@ -78,7 +81,16 @@ struct TexturingShader : public IShader {
     BTN.setColumn(1, j.normalize());
     BTN.setColumn(2, normalBar);
 
-    Vec3f normalMapped = (BTN * Matrix(model->getNormal(uvBar), 0));
+    BTN.output();
+
+    Matrix result = (BTN * Matrix(model->getNormal(uvBar), 0));
+
+    result.output();
+
+    Vec3f normalMapped = Vec3f(result(1, 0), result(2, 0), result(3, 0));
+
+    std::cerr << normalMapped << '\n';
+
     TGAColor shadedColor = textureColor * (normalMapped * lightDirection);
     color = shadedColor;
     return false;
