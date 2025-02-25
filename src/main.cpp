@@ -38,7 +38,7 @@ struct TexturingShader : public IShader {
         idVert,
         Vec3f(uniform_MVIT *
               Matrix(model->vertexNomal(model->vertexNomalsIds(face)[idVert]),
-                     0.)));
+                     1.)));
 
     varying_uv.setColumn(idVert,
                          model->textCoord(model->texture(face)[idVert]));
@@ -53,6 +53,9 @@ struct TexturingShader : public IShader {
   virtual bool fragment(Vec3f bar, TGAColor& color) override {
     Vec2f uvBar = varying_uv * Matrix(bar, 1);
     Vec3f normalBar = varying_nrm * Matrix(bar, 1);
+
+    varying_nrm.output();
+    std::cerr << normalBar << '\n';
 
     TGAColor textureColor = model->getDiffuse(uvBar);
 
@@ -71,9 +74,7 @@ struct TexturingShader : public IShader {
 
     Vec3f j = AI * Matrix(Vec3f(varying_uv(1, 1) - varying_uv(1, 0),
                                 varying_uv(1, 2) - varying_uv(1, 0), 0.f),
-                          0);
-
-    std::cerr << i << " " << j << '\n';
+                          1);
 
     Matrix BTN = Matrix::identity(4);
 

@@ -241,8 +241,8 @@ class Matrix {
     float result = 0.f;
     Matrix cofac(dimension - 1, dimension - 1);
 
-    for (int f = 0; f < (*this).getColumns(); f++) {
-      getCofac(0, 0, cofac);
+    for (int f = 0; f < dimension; f++) {
+      getCofac(0, f, cofac);
       result += sing * (*this)(0, f) * cofac.getDeterminant(dimension - 1);
       sing = -sing;
     }
