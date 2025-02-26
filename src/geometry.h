@@ -274,6 +274,8 @@ class Matrix {
     assert(determinant != 0.0);
 
     adjugate(inverse, determinant);
+
+    inverse = inverse.transpose();
   }
 };
 

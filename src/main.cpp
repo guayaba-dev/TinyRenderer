@@ -1,6 +1,5 @@
 #include <SDL2/SDL_render.h>
 
-#include <iostream>
 #include <limits>
 
 #include "SDL2/SDL.h"
@@ -54,9 +53,6 @@ struct TexturingShader : public IShader {
     Vec2f uvBar = varying_uv * Matrix(bar, 1);
     Vec3f normalBar = varying_nrm * Matrix(bar, 1);
 
-    varying_nrm.output();
-    std::cerr << normalBar << '\n';
-
     TGAColor textureColor = model->getDiffuse(uvBar);
 
     Matrix A = Matrix::identity(4);
@@ -64,7 +60,6 @@ struct TexturingShader : public IShader {
     A.setColumn(0, ndc_tri.getColumn(2) - ndc_tri.getColumn(0));
     A.setColumn(1, ndc_tri.getColumn(1) - ndc_tri.getColumn(0));
     A.setColumn(2, normalBar);
-    A = A.transpose();
     Matrix AI(4, 4);
     A.inverse(AI);
 
@@ -89,8 +84,6 @@ struct TexturingShader : public IShader {
     result.output();
 
     Vec3f normalMapped = Vec3f(result(1, 0), result(2, 0), result(3, 0));
-
-    std::cerr << normalMapped << '\n';
 
     TGAColor shadedColor = textureColor * (normalMapped * lightDirection);
     color = shadedColor;
@@ -129,11 +122,8 @@ int main(int argc, char** argv) {
     projection(-1.f / (eye - center).norm());
 
     shader.uniform_MV = ModelView;
-    shader.uniform_MV.output();
     shader.uniform_MVIT(4, 4);
     ModelView.inverse(shader.uniform_MVIT);
-    shader.uniform_MVIT.transpose();
-    shader.uniform_MVIT.output();
 
     for (int i = 0; i < model->nfaces(); i++) {
       Vec3f screen_coords[3];

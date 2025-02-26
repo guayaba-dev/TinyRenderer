@@ -148,5 +148,39 @@ void testgetDeterminant() {
   E(3, 2) = 1;
   E(3, 3) = 2;
   assert(E.getDeterminant(4) == 2);
-  std::cout << "✅ Todos los tests de getDeterminantes pasaron!\n";
+  std::cout << "✅  test getDeterminant passed!\n";
+}
+
+void testGetInverse() {
+  Matrix A(2, 2);
+  Matrix AI(2, 2);
+  Matrix expectedAI(2, 2);
+
+  A(0, 0) = -1;
+  A(0, 1) = 2;
+  A(1, 0) = -1;
+  A(1, 1) = 1;
+
+  expectedAI(0, 0) = 1;
+  expectedAI(0, 1) = -2;
+  expectedAI(1, 0) = 1;
+  expectedAI(1, 1) = -1;
+
+  A.inverse(AI);
+
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 2; j++) {
+      assert(AI(i, j) == expectedAI(i, j));
+    }
+  }
+
+  std::cout << "✅  test getInverse passed!\n";
+}
+
+void testGeometryMatrix() {
+  testIdentityMatrix();
+  testMultiplication();
+  testCofacMatrix();
+  testgetDeterminant();
+  testGetInverse();
 }

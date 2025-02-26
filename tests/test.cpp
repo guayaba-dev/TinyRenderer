@@ -1,10 +1,7 @@
-#include "geometryTest.cpp"
+#include "geometryMatrixTest.cpp"
 
 int main() {
-  testIdentityMatrix();
-  testMultiplication();
-  testCofacMatrix();
-  testgetDeterminant();
+  testGeometryMatrix();
   std::cout << "All tests passed!\n";
   return 0;
 }
