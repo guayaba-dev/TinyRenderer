@@ -31,7 +31,6 @@ struct Vec2 {
   };
   Vec2() : u(0), v(0) {}
   Vec2(t _u, t _v) : u(_u), v(_v) {}
-  Vec2<t>(Matrix m);
   inline Vec2<t> operator+(const Vec2<t>& V) const {
     return Vec2<t>(u + V.u, v + V.v);
   }
@@ -60,7 +59,6 @@ struct Vec3 {
   };
   Vec3<t>() : x(0), y(0), z(0) {}
   Vec3<t>(t _x, t _y, t _z) : x(_x), y(_y), z(_z) {}
-  Vec3<t>(Matrix m);
 
   inline Vec3<t> operator^(const Vec3<t>& v) const {
     return Vec3<t>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
@@ -90,10 +88,64 @@ struct Vec3 {
   friend std::ostream& operator<<(std::ostream& s, Vec3<t>& v);
 };
 
+template <class t>
+struct Vec4 {
+  union {
+    struct {
+      t x, y, z, w;
+    };
+    t raw[4];
+  };
+  Vec4<t>(Vec2<t> v, const t _w) : x(v.x), y(v.y), z(0), w(_w) {}
+  Vec4<t>(Vec3<t> v, const t _w) : x(v.x), y(v.y), z(v.z), w(_w) {}
+  Vec4<t>() : x(0), y(0), z(0), w(0) {}
+  Vec4<t>(t _x, t _y, t _z, t _w) : x(_x), y(_y), z(_z), w(_w) {}
+  Vec4<t>(Matrix m);
+
+  inline Vec4<t> operator^(const Vec4<t>& v) const {
+    return Vec4<t>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x, w);
+  }
+  inline Vec4<t> operator+(const Vec4<t>& v) const {
+    return Vec4<t>(x + v.x, y + v.y, z + v.z, w - v.w);
+  }
+  inline Vec4<t> operator-(const Vec4<t>& v) const {
+    return Vec4<t>(x - v.x, y - v.y, z - v.z, w - v.w);
+  }
+  inline Vec4<t> operator*(float f) const {
+    return Vec4<t>(x * f, y * f, z * f, w * f);
+  }
+  inline t operator*(const Vec4<t>& v) const {
+    return x * v.x + y * v.y + z * v.z + w * v.w;
+  }
+
+  inline t& operator[](const int i) { return raw[i]; }
+  const inline t& operator[](const int i) const { return raw[i]; }
+
+  Vec4<t> hogenize() {
+    float wI = 1. / w;
+
+    return Vec4<t>(x * wI, y * wI, z * wI, w * wI);
+  };
+
+  Vec3<t> xyz() { return Vec3<t>(x, y, z); }
+
+  Vec2<t> xy() { return Vec2<t>(x, y); }
+
+  float norm() const { return std::sqrt(x * x + y * y + z * z + w * w); }
+  Vec4<t>& normalize(t l = 1) {
+    *this = (*this) * (l / norm());
+    return *this;
+  }
+  template <class>
+  friend std::ostream& operator<<(std::ostream& s, Vec3<t>& v);
+};
+
 typedef Vec2<float> Vec2f;
 typedef Vec2<int> Vec2i;
 typedef Vec3<float> Vec3f;
 typedef Vec3<int> Vec3i;
+typedef Vec4<int> Vec4i;
+typedef Vec4<float> Vec4f;
 
 template <class t>
 std::ostream& operator<<(std::ostream& s, Vec2<t>& v) {
@@ -123,12 +175,12 @@ class Matrix {
     this->columns = columns;
   }
 
-  Matrix(const Vec3f& v, int vertex) {
-    m = vector<float>(4, vertex);
+  Matrix(const Vec4f& v) {
+    m = vector<float>(4, 0.);
     this->rows = 4;
     this->columns = 1;
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
       (*this)(i, 0) = v[i];
     }
   }
@@ -190,26 +242,20 @@ class Matrix {
   }
 
   // TODO: Add vec4
-  void setColumn(const int col, const Vec3f& vector) {
-    assert((*this).getRows() >= 3);
+  void setColumn(const int col, const Vec4f& vector) {
+    assert((*this).getRows() >= 4);
 
-    for (int i = 0; i < 3; i++) {
-      (*this)(i, col) = vector[i];
-    }
-  }
-
-  void setColumn(const int col, const Vec2f& vector) {
-    assert((*this).getRows() >= 2);
-
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 4; i++) {
       (*this)(i, col) = vector[i];
     }
   }
 
   // TODO: add vec4
-  Vec3f getColumn(const int col) const {
-    Vec3f result;
-    for (int i = 0; i < 3; i++) result[i] = (*this)(i, col);
+  Vec4f getColumn(const int col) const {
+    assert((*this).getRows() >= 4);
+
+    Vec4f result;
+    for (int i = 0; i < 4; i++) result[i] = (*this)(i, col);
     return result;
   }
 

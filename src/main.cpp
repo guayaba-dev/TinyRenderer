@@ -29,31 +29,32 @@ struct TexturingShader : public IShader {
 
   virtual Vec3f vertex(int face, int idVert) override {
     Matrix v = ViewPort * Projection * ModelView *
-               Matrix(model->vert(model->face(face)[idVert]), 1);
+               Matrix(Vec4f(model->vert(model->face(face)[idVert]), 1));
 
-    Vec3f glVertex = v;
+    Vec4f glVertex = v;
 
-    varying_nrm.setColumn(
-        idVert,
-        Vec3f(uniform_MVIT *
-              Matrix(model->vertexNomal(model->vertexNomalsIds(face)[idVert]),
-                     1.)));
+    Matrix nrm =
+        Vec4f(model->vertexNomal(model->vertexNomalsIds(face)[idVert]), 0.);
+    nrm = uniform_MVIT * nrm;
+    varying_nrm.setColumn(idVert, nrm);
 
-    varying_uv.setColumn(idVert,
-                         model->textCoord(model->texture(face)[idVert]));
+    varying_uv.setColumn(
+        idVert, Vec4f(model->textCoord(model->texture(face)[idVert]), 0.));
 
-    ndc_tri.setColumn(idVert, Vec3f(v));
+    ndc_tri.setColumn(idVert, Vec4f(v));
 
     varying_tri.setColumn(idVert, glVertex);
 
-    return glVertex;
+    glVertex = glVertex.hogenize();
+
+    return glVertex.xyz();
   }
 
-  virtual bool fragment(Vec3f bar, TGAColor& color) override {
-    Vec2f uvBar = varying_uv * Matrix(bar, 1);
-    Vec3f normalBar = varying_nrm * Matrix(bar, 1);
+  virtual bool fragment(Vec4f bar, TGAColor& color) override {
+    Vec4f uvBar = varying_uv * Matrix(bar);
+    Vec4f normalBar = varying_nrm * Matrix(bar);
 
-    TGAColor textureColor = model->getDiffuse(uvBar);
+    TGAColor textureColor = model->getDiffuse(uvBar.xy());
 
     Matrix A = Matrix::identity(4);
 
@@ -63,13 +64,11 @@ struct TexturingShader : public IShader {
     Matrix AI(4, 4);
     A.inverse(AI);
 
-    Vec3f i = AI * Matrix(Vec3f(varying_uv(0, 1) - varying_uv(0, 0),
-                                varying_uv(0, 2) - varying_uv(0, 0), 0.f),
-                          1);
+    Vec4f i = AI * Matrix(Vec4f(varying_uv(0, 1) - varying_uv(0, 0),
+                                varying_uv(0, 2) - varying_uv(0, 0), 0., 0.));
 
-    Vec3f j = AI * Matrix(Vec3f(varying_uv(1, 1) - varying_uv(1, 0),
-                                varying_uv(1, 2) - varying_uv(1, 0), 0.f),
-                          1);
+    Vec4f j = AI * Matrix(Vec4f(varying_uv(1, 1) - varying_uv(1, 0),
+                                varying_uv(1, 2) - varying_uv(1, 0), 0., 1));
 
     Matrix BTN = Matrix::identity(4);
 
@@ -77,15 +76,13 @@ struct TexturingShader : public IShader {
     BTN.setColumn(1, j.normalize());
     BTN.setColumn(2, normalBar);
 
-    BTN.output();
-
-    Matrix result = (BTN * Matrix(model->getNormal(uvBar), 0));
-
-    result.output();
+    Matrix result = (BTN * Matrix(Vec4f(model->getNormal(uvBar.xy()), 0)));
 
     Vec3f normalMapped = Vec3f(result(1, 0), result(2, 0), result(3, 0));
 
     TGAColor shadedColor = textureColor * (normalMapped * lightDirection);
+
+    // TGAColor shadedColor = textureColor;
     color = shadedColor;
     return false;
   }

@@ -9,16 +9,16 @@ Matrix Projection;
 
 IShader::~IShader() {}
 
-Vec3f getBarycentric(Vec3f vertex[], Vec3i point) {
+Vec4f getBarycentric(Vec3f vertex[], Vec3i point) {
   Vec3f x_vertex = Vec3f(vertex[1].x - vertex[0].x, vertex[2].x - vertex[0].x,
                          vertex[0].x - point.x);
   Vec3f y_vertex = Vec3f(vertex[1].y - vertex[0].y, vertex[2].y - vertex[0].y,
                          vertex[0].y - point.y);
 
   Vec3f u = x_vertex ^ y_vertex;
-  if (abs(u.z) < 1) return Vec3f(-1, 1, 1);
+  if (abs(u.z) < 1) return Vec4f(-1, 1, 1, 1);
 
-  return Vec3f(1 - (u.x / u.z + u.y / u.z), u.x / u.z, u.y / u.z);
+  return Vec4f(1 - (u.x / u.z + u.y / u.z), u.x / u.z, u.y / u.z, 0.f);
 }
 
 void drawTriangle(Vec3f points[], float z_buffer[], SDL_Renderer* renderer,
@@ -38,7 +38,7 @@ void drawTriangle(Vec3f points[], float z_buffer[], SDL_Renderer* renderer,
   Vec3i P;
   for (P.y = bboxmin.y; P.y < bboxmax.y; P.y++) {
     for (P.x = bboxmin.x; P.x < bboxmax.x; P.x++) {
-      Vec3f barycentric = getBarycentric(points, P);
+      Vec4f barycentric = getBarycentric(points, P);
 
       if (barycentric.x < 0. || barycentric.y < 0. || barycentric.z < 0.)
         continue;  // out of triangleBounds
