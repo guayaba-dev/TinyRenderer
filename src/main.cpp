@@ -1,5 +1,7 @@
+#include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
 
+#include <cstddef>
 #include <limits>
 
 #include "SDL2/SDL.h"
@@ -61,6 +63,9 @@ struct TexturingShader : public IShader {
     A.setColumn(0, ndc_tri.getColumn(2) - ndc_tri.getColumn(0));
     A.setColumn(1, ndc_tri.getColumn(1) - ndc_tri.getColumn(0));
     A.setColumn(2, normalBar);
+    A.transpose();
+    // A.output();
+
     Matrix AI(4, 4);
     A.inverse(AI);
 
@@ -68,7 +73,7 @@ struct TexturingShader : public IShader {
                                 varying_uv(0, 2) - varying_uv(0, 0), 0., 0.));
 
     Vec4f j = AI * Matrix(Vec4f(varying_uv(1, 1) - varying_uv(1, 0),
-                                varying_uv(1, 2) - varying_uv(1, 0), 0., 1));
+                                varying_uv(1, 2) - varying_uv(1, 0), 0., 0.));
 
     Matrix BTN = Matrix::identity(4);
 
@@ -78,11 +83,18 @@ struct TexturingShader : public IShader {
 
     Matrix result = (BTN * Matrix(Vec4f(model->getNormal(uvBar.xy()), 0)));
 
-    Vec3f normalMapped = Vec3f(result(1, 0), result(2, 0), result(3, 0));
+    Vec3f normalMapped = Vec3f(result(0, 0), result(1, 0), result(2, 0));
 
-    TGAColor shadedColor = textureColor * (normalMapped * lightDirection);
+    float lightIntensity = (normalMapped * lightDirection);
 
-    // TGAColor shadedColor = textureColor;
+    if (lightIntensity <= 0) {
+      // result.output();
+      // std::cerr << normalMapped;
+    };
+
+    // TGAColor shadedColor = textureColor * lightIntensity;
+
+    TGAColor shadedColor = textureColor;
     color = shadedColor;
     return false;
   }
@@ -104,11 +116,14 @@ int main(int argc, char** argv) {
 
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
+  SDL_Texture* canvas = nullptr;
 
   {  // window set up
     SDL_Init(SDL_INIT_VIDEO);
     SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
-
+    canvas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
+                               SDL_TEXTUREACCESS_TARGET, WIDTH, HEIGHT);
+    SDL_SetRenderTarget(renderer, canvas);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
   }
@@ -133,6 +148,8 @@ int main(int argc, char** argv) {
     }
   }
 
+  SDL_SetRenderTarget(renderer, NULL);
+
   bool running = true;
   SDL_Event event;
 
@@ -140,17 +157,21 @@ int main(int argc, char** argv) {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
         running = false;
-      } else if (event.type == SDL_KEYDOWN) {
-        if (event.key.keysym.sym == SDLK_ESCAPE) {
-          running = false;
-        }
       }
+
+      if (event.type != SDL_KEYDOWN) continue;
+      if (event.key.keysym.sym != SDLK_ESCAPE) continue;
+
+      running = false;
     }
 
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, canvas, NULL, NULL);
     SDL_RenderPresent(renderer);
     SDL_Delay(16);
   }
 
+  SDL_DestroyTexture(canvas);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
