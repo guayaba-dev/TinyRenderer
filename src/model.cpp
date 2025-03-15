@@ -65,6 +65,7 @@ Model::Model(const char *filename)
     }
   }
   std::cerr << "# v# " << verts_.size() << " f# " << faces_.size() << std::endl;
+  // load_texture(filename, "_diffuse.tga", diffusemap_);
   load_texture(filename, "_diffuse.tga", diffusemap_);
   load_texture(filename, "_nm_tangent.tga", normalmap_);
 }

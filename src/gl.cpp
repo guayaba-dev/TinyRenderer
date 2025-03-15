@@ -62,7 +62,8 @@ void drawTriangle(Vec3f points[], float z_buffer[], SDL_Renderer* renderer,
         SDL_SetRenderDrawColor(renderer, shadedColor[2], shadedColor[1],
                                shadedColor[0], 1);
 
-        SDL_RenderDrawPoint(renderer, P.x, windowDimensions.y - P.y);
+        SDL_RenderDrawPoint(renderer, windowDimensions.x - P.x,
+                            windowDimensions.y - P.y);
       }
     }
   }

@@ -137,7 +137,7 @@ struct Vec4 {
     return *this;
   }
   template <class>
-  friend std::ostream& operator<<(std::ostream& s, Vec3<t>& v);
+  friend std::ostream& operator<<(std::ostream& s, Vec4<t>& v);
 };
 
 typedef Vec2<float> Vec2f;
@@ -156,6 +156,12 @@ std::ostream& operator<<(std::ostream& s, Vec2<t>& v) {
 template <class t>
 std::ostream& operator<<(std::ostream& s, Vec3<t>& v) {
   s << "(" << v.x << ", " << v.y << ", " << v.z << ")\n";
+  return s;
+}
+
+template <class t>
+std::ostream& operator<<(std::ostream& s, Vec4<t>& v) {
+  s << "(" << v.x << ", " << v.y << ", " << v.z << "," << v.w << ")\n";
   return s;
 }
 
@@ -204,6 +210,21 @@ class Matrix {
     return result;
   }
 
+  Matrix incrementDimenesion() {
+    int _columns = (*this).getColumns();
+    int _rows = (*this).getRows();
+
+    Matrix result(_columns + 1, _rows + 1);
+
+    for (int i = 0; i < _rows; i++) {
+      for (int j = 0; j < _columns; j++) {
+        result(i, j) = (*this)(i, j);
+      }
+    }
+
+    return result;
+  }
+
   Matrix operator*(const Matrix& a) const {
     assert((*this).getColumns() == a.getRows());
 
@@ -243,9 +264,7 @@ class Matrix {
 
   // TODO: Add vec4
   void setColumn(const int col, const Vec4f& vector) {
-    assert((*this).getRows() >= 4);
-
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < getRows(); i++) {
       (*this)(i, col) = vector[i];
     }
   }

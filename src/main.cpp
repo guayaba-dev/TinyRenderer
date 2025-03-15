@@ -1,6 +1,7 @@
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <limits>
 
@@ -13,11 +14,10 @@
 const int HEIGHT = 700;
 const int WIDTH = 700;
 const int DEPTH = 255;
-
 Model* model = NULL;
 float* z_buffer = NULL;
-Vec3f lightDirection = Vec3f(1, 1, 1).normalize();
-Vec3f eye(0, -1, 3);
+Vec3f lightDirection = Vec3f(-1, 0., 0.).normalize();
+Vec3f eye(2, 3, 3);
 Vec3f center(0, 0, 0);
 
 struct TexturingShader : public IShader {
@@ -43,7 +43,7 @@ struct TexturingShader : public IShader {
     varying_uv.setColumn(
         idVert, Vec4f(model->textCoord(model->texture(face)[idVert]), 0.));
 
-    ndc_tri.setColumn(idVert, Vec4f(v));
+    ndc_tri.setColumn(idVert, glVertex.hogenize());
 
     varying_tri.setColumn(idVert, glVertex);
 
@@ -58,16 +58,17 @@ struct TexturingShader : public IShader {
 
     TGAColor textureColor = model->getDiffuse(uvBar.xy());
 
-    Matrix A = Matrix::identity(4);
+    Matrix A = Matrix::identity(3);
 
-    A.setColumn(0, ndc_tri.getColumn(2) - ndc_tri.getColumn(0));
-    A.setColumn(1, ndc_tri.getColumn(1) - ndc_tri.getColumn(0));
+    A.setColumn(0, ndc_tri.getColumn(1) - ndc_tri.getColumn(0));
+    A.setColumn(1, ndc_tri.getColumn(2) - ndc_tri.getColumn(0));
     A.setColumn(2, normalBar);
-    A.transpose();
-    // A.output();
+    A = A.transpose();
 
-    Matrix AI(4, 4);
+    Matrix AI(3, 3);
     A.inverse(AI);
+
+    AI = AI.incrementDimenesion();
 
     Vec4f i = AI * Matrix(Vec4f(varying_uv(0, 1) - varying_uv(0, 0),
                                 varying_uv(0, 2) - varying_uv(0, 0), 0., 0.));
@@ -85,16 +86,10 @@ struct TexturingShader : public IShader {
 
     Vec3f normalMapped = Vec3f(result(0, 0), result(1, 0), result(2, 0));
 
-    float lightIntensity = (normalMapped * lightDirection);
+    float lightIntensity = std::max(0.f, (normalMapped * lightDirection));
 
-    if (lightIntensity <= 0) {
-      // result.output();
-      // std::cerr << normalMapped;
-    };
+    TGAColor shadedColor = textureColor * lightIntensity;
 
-    // TGAColor shadedColor = textureColor * lightIntensity;
-
-    TGAColor shadedColor = textureColor;
     color = shadedColor;
     return false;
   }
