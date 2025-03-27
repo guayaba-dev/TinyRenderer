@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <iostream>
 #include <limits>
 
 #include "SDL2/SDL.h"
@@ -16,8 +17,9 @@ const int WIDTH = 700;
 const int DEPTH = 255;
 Model* model = NULL;
 float* z_buffer = NULL;
-Vec3f lightDirection = Vec3f(-1, 0., 0.).normalize();
-Vec3f eye(2, 3, 3);
+Vec3f lightDirection = Vec3f(-0.5, 0., 1.).normalize();  // camera perspective
+                                                         // light
+Vec3f eye(2, 1, 4);
 Vec3f center(0, 0, 0);
 
 struct TexturingShader : public IShader {
@@ -86,11 +88,14 @@ struct TexturingShader : public IShader {
 
     Vec3f normalMapped = Vec3f(result(0, 0), result(1, 0), result(2, 0));
 
+    std::cerr << normalMapped << '\n' << "--------------------------" << '\n';
+
     float lightIntensity = std::max(0.f, (normalMapped * lightDirection));
 
     TGAColor shadedColor = textureColor * lightIntensity;
 
     color = shadedColor;
+
     return false;
   }
 };

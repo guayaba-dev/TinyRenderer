@@ -1,9 +1,11 @@
+#pragma once
+
 #include <cassert>
 #include <iostream>
 
 #include "../src/geometry.h"  // Asegúrate de incluir tu clase Matrix
 
-void testIdentityMatrix() {
+inline void testIdentityMatrix() {
   Matrix I = Matrix::identity(3);
   assert(I(0, 0) == 1.0f);
   assert(I(1, 1) == 1.0f);
@@ -13,7 +15,7 @@ void testIdentityMatrix() {
   std::cout << "✅ testIdentityMatrix passed!\n";
 }
 
-void testMultiplication() {
+inline void testMultiplication() {
   Matrix A(2, 2);
   A(0, 0) = 1;
   A(0, 1) = 2;
@@ -36,7 +38,7 @@ void testMultiplication() {
   std::cout << "✅ testMultiplication passed!\n";
 }
 
-void testCofacMatrix() {
+inline void testCofacMatrix() {
   Matrix A(4, 4);
 
   A(0, 0) = 1;
@@ -85,7 +87,7 @@ void testCofacMatrix() {
   std::cout << "✅ testCofacMatrix passed!\n";
 }
 
-void testgetDeterminant() {
+inline void testgetDeterminant() {
   // Matriz 1: 2x2
   Matrix A(2, 2);
   A(0, 0) = 1;
@@ -151,7 +153,7 @@ void testgetDeterminant() {
   std::cout << "✅  test getDeterminant passed!\n";
 }
 
-void testGetInverse() {
+inline void testGetInverse() {
   Matrix A(2, 2);
   Matrix AI(2, 2);
   Matrix expectedAI(2, 2);
@@ -177,7 +179,7 @@ void testGetInverse() {
   std::cout << "✅  test getInverse passed!\n";
 }
 
-void testGeometryMatrix() {
+inline void testGeometryMatrix() {
   testIdentityMatrix();
   testMultiplication();
   testCofacMatrix();

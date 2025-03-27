@@ -1,4 +1,4 @@
-#include "geometryMatrixTest.cpp"
+#include "geometryMatrixTest.h"
 
 int main() {
   testGeometryMatrix();
