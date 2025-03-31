@@ -35,8 +35,6 @@ void drawTriangle(Vec3f points[], float z_buffer[], SDL_Renderer* renderer,
     bboxmax.y = std::min(clamp.y, std::max(bboxmax.y, points[i].y));
   }
 
-  std::cerr << "Trinagle renderer" << '\n';
-
   Vec3i P;
   for (P.y = bboxmin.y; P.y < bboxmax.y; P.y++) {
     for (P.x = bboxmin.x; P.x < bboxmax.x; P.x++) {

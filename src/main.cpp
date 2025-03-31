@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <iostream>
 #include <limits>
 
 #include "SDL2/SDL.h"
@@ -17,9 +16,9 @@ const int WIDTH = 700;
 const int DEPTH = 255;
 Model* model = NULL;
 float* z_buffer = NULL;
-Vec3f lightDirection = Vec3f(-0.5, 0., 1.).normalize();  // camera perspective
+Vec3f lightDirection = Vec3f(-1., 1., -1.).normalize();  // camera perspective
                                                          // light
-Vec3f eye(2, 1, 4);
+Vec3f eye(1, 1, 3);
 Vec3f center(0, 0, 0);
 
 struct TexturingShader : public IShader {
@@ -32,31 +31,29 @@ struct TexturingShader : public IShader {
   Matrix uniform_MVIT = Matrix::identity(4);  // ModelView inverse traspose
 
   virtual Vec3f vertex(int face, int idVert) override {
-    Matrix v = ViewPort * Projection * ModelView *
-               Matrix(Vec4f(model->vert(model->face(face)[idVert]), 1));
-
-    Vec4f glVertex = v;
+    varying_uv.setColumn(
+        idVert, Vec4f(model->textCoord(model->texture(face)[idVert]), 0.));
 
     Matrix nrm =
         Vec4f(model->vertexNomal(model->vertexNomalsIds(face)[idVert]), 0.);
     nrm = uniform_MVIT * nrm;
     varying_nrm.setColumn(idVert, nrm);
 
-    varying_uv.setColumn(
-        idVert, Vec4f(model->textCoord(model->texture(face)[idVert]), 0.));
-
-    ndc_tri.setColumn(idVert, glVertex.hogenize());
+    Vec4f glVertex = ViewPort * Projection * ModelView *
+                     Matrix(Vec4f(model->vert(model->face(face)[idVert]), 1));
 
     varying_tri.setColumn(idVert, glVertex);
 
-    glVertex = glVertex.hogenize();
+    ndc_tri.setColumn(idVert, glVertex.hogenize());
 
-    return glVertex.xyz();
+    return glVertex.hogenize().xyz();
   }
 
   virtual bool fragment(Vec4f bar, TGAColor& color) override {
-    Vec4f uvBar = varying_uv * Matrix(bar);
     Vec4f normalBar = varying_nrm * Matrix(bar);
+    normalBar = normalBar.normalize();
+
+    Vec4f uvBar = varying_uv * Matrix(bar);
 
     TGAColor textureColor = model->getDiffuse(uvBar.xy());
 
@@ -88,9 +85,7 @@ struct TexturingShader : public IShader {
 
     Vec3f normalMapped = Vec3f(result(0, 0), result(1, 0), result(2, 0));
 
-    std::cerr << normalMapped << '\n' << "--------------------------" << '\n';
-
-    float lightIntensity = std::max(0.f, (normalMapped * lightDirection));
+    float lightIntensity = (normalMapped * lightDirection);
 
     TGAColor shadedColor = textureColor * lightIntensity;
 
@@ -133,9 +128,10 @@ int main(int argc, char** argv) {
     viewport(WIDTH, HEIGHT, 0, 0);
     projection(-1.f / (eye - center).norm());
 
-    shader.uniform_MV = ModelView;
+    shader.uniform_MV = Projection * ModelView;
     shader.uniform_MVIT(4, 4);
     ModelView.inverse(shader.uniform_MVIT);
+    shader.uniform_MVIT = shader.uniform_MVIT.transpose();
 
     for (int i = 0; i < model->nfaces(); i++) {
       Vec3f screen_coords[3];
