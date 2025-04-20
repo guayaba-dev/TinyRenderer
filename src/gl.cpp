@@ -16,7 +16,8 @@ Vec4f getBarycentric(Vec3f vertex[], Vec3i point) {
                          vertex[0].y - point.y);
 
   Vec3f u = x_vertex ^ y_vertex;
-  if (abs(u.z) < 1) return Vec4f(-1, 1, 1, 1);
+
+  if (abs(u.z) < 1) return Vec4f(-1, 1, 1, 0);
 
   return Vec4f(1 - (u.x / u.z + u.y / u.z), u.x / u.z, u.y / u.z, 0.f);
 }
@@ -60,7 +61,7 @@ void drawTriangle(Vec3f points[], float z_buffer[], SDL_Renderer* renderer,
         }
 
         SDL_SetRenderDrawColor(renderer, shadedColor[2], shadedColor[1],
-                               shadedColor[0], 1);
+                               shadedColor[0], 100);
 
         SDL_RenderDrawPoint(renderer, windowDimensions.x - P.x,
                             windowDimensions.y - P.y);

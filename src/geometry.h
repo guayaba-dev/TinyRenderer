@@ -59,6 +59,7 @@ struct Vec3 {
   };
   Vec3<t>() : x(0), y(0), z(0) {}
   Vec3<t>(t _x, t _y, t _z) : x(_x), y(_y), z(_z) {}
+  Vec3<t>(Matrix m);
 
   inline Vec3<t> operator^(const Vec3<t>& v) const {
     return Vec3<t>(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
@@ -191,6 +192,16 @@ class Matrix {
     }
   }
 
+  Matrix(const Vec3f& v) {
+    m = vector<float>(3, 0.);
+    this->rows = 3;
+    this->columns = 1;
+
+    for (int i = 0; i < 3; i++) {
+      (*this)(i, 0) = v[i];
+    }
+  }
+
   float& operator()(int row, int col) { return m[row * getColumns() + col]; }
 
   const float& operator()(int row, int col) const {
@@ -301,6 +312,17 @@ class Matrix {
     assert((*this).getColumns() == (*this).getRows());
 
     if (dimension == 1) return (*this)(0, 0);
+
+    if (dimension == 2)
+      return (*this)(0, 0) * (*this)(1, 1) - (*this)(0, 1) * (*this)(1, 0);
+
+    if (dimension == 3)
+      return (*this)(0, 0) * ((*this)(1, 1) * (*this)(2, 2) -
+                              (*this)(2, 1) * (*this)(1, 2)) +
+             (*this)(0, 1) * ((*this)(2, 0) * (*this)(1, 2) -
+                              (*this)(1, 0) * (*this)(2, 2)) +
+             (*this)(0, 2) * ((*this)(2, 1) * (*this)(1, 0) -
+                              (*this)(1, 1) * (*this)(2, 0));
 
     int sing = 1;
     float result = 0.f;

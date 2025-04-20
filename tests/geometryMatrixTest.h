@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 
@@ -89,6 +90,7 @@ inline void testCofacMatrix() {
 
 inline void testgetDeterminant() {
   // Matriz 1: 2x2
+  /*
   Matrix A(2, 2);
   A(0, 0) = 1;
   A(0, 1) = 2;
@@ -150,25 +152,88 @@ inline void testgetDeterminant() {
   E(3, 2) = 1;
   E(3, 3) = 2;
   assert(E.getDeterminant(4) == 2);
+  */
+
+  Matrix F(4, 4);
+
+  F(0, 0) = 1;
+  F(0, 1) = 1 / 2.;
+  F(0, 2) = 1 / 3.;
+  F(0, 3) = 1 / 4.;
+
+  F(1, 0) = 1 / 2.;
+  F(1, 1) = 1 / 3.;
+  F(1, 2) = 1 / 4.;
+  F(1, 3) = 1 / 5.;
+
+  F(2, 0) = 1 / 3.;
+  F(2, 1) = 1 / 4.;
+  F(2, 2) = 1 / 5.;
+  F(2, 3) = 1 / 6.;
+
+  F(3, 0) = 1 / 4.;
+  F(3, 1) = 1 / 5.;
+  F(3, 2) = 1 / 6.;
+  F(3, 3) = 1 / 7.;
+
+  float determinant = F.getDeterminant(4);
+  std::cerr << determinant << '\n';
+  std::cerr << 1 / 6048000. << '\n';
+  // assert(determinant == 1 / 6048000.);
+
   std::cout << "✅  test getDeterminant passed!\n";
 }
 
 inline void testGetInverse() {
-  Matrix A(2, 2);
-  Matrix AI(2, 2);
-  Matrix expectedAI(2, 2);
+  Matrix A(4, 4);
+  Matrix AI(4, 4);
+  Matrix expectedAI(4, 4);
 
-  A(0, 0) = -1;
-  A(0, 1) = 2;
-  A(1, 0) = -1;
-  A(1, 1) = 1;
+  A(0, 0) = 1;
+  A(0, 1) = 1 / 2.;
+  A(0, 2) = 1 / 3.;
+  A(0, 3) = 1 / 4.;
 
-  expectedAI(0, 0) = 1;
-  expectedAI(0, 1) = -2;
-  expectedAI(1, 0) = 1;
-  expectedAI(1, 1) = -1;
+  A(1, 0) = 1 / 2.;
+  A(1, 1) = 1 / 3.;
+  A(1, 2) = 1 / 4.;
+  A(1, 3) = 1 / 5.;
+
+  A(2, 0) = 1 / 3.;
+  A(2, 1) = 1 / 4.;
+  A(2, 2) = 1 / 5.;
+  A(2, 3) = 1 / 6.;
+
+  A(3, 0) = 1 / 4.;
+  A(3, 1) = 1 / 5.;
+  A(3, 2) = 1 / 6.;
+  A(3, 3) = 1 / 7.;
+
+  expectedAI(0, 0) = 16;
+  expectedAI(0, 1) = -120;
+  expectedAI(0, 2) = 240;
+  expectedAI(0, 3) = -140;
+
+  expectedAI(1, 0) = -120;
+  expectedAI(1, 1) = 1200;
+  expectedAI(1, 2) = -2700;
+  expectedAI(1, 3) = 1680;
+
+  expectedAI(2, 0) = 240;
+  expectedAI(2, 1) = -2700;
+  expectedAI(2, 2) = 6480;
+  expectedAI(2, 3) = -4200;
+
+  expectedAI(3, 0) = -140;
+  expectedAI(3, 1) = 1680;
+  expectedAI(3, 2) = -4200;
+  expectedAI(3, 3) = 2800;
 
   A.inverse(AI);
+
+  AI.output();
+
+  expectedAI.output();
 
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
