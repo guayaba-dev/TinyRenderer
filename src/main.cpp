@@ -4,8 +4,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <iostream>
-#include <limits>
 
 #include "SDL2/SDL.h"
 #include "geometry.h"
