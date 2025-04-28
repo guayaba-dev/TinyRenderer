@@ -18,7 +18,7 @@ const int WIDTH = 700;
 const int DEPTH = 255;
 Model* model = NULL;
 float* z_buffer = NULL;
-Vec3f lightDirection = Vec3f(1., 1., -1);  // light
+Vec3f lightDirection = Vec3f(1., 1., 1);  // light
 Vec3f eye(1, 1, 3);
 Vec3f center(0, 0, 0);
 
@@ -70,16 +70,13 @@ struct TexturingShader : public IShader {
     Matrix AI(3, 3);
     A.inverse(AI);
 
-    Vec4f i = AI * Matrix(Vec3f(varying_uv(0, 1) - varying_uv(0, 0),
-                                varying_uv(0, 2) - varying_uv(0, 0), 0.));
+    AI = AI.incrementDimenesion();
 
-    Vec4f j = AI * Matrix(Vec3f(varying_uv(1, 1) - varying_uv(1, 0),
-                                varying_uv(1, 2) - varying_uv(1, 0), 0.));
+    Vec4f i = AI * Matrix(Vec4f(varying_uv(0, 1) - varying_uv(0, 0),
+                                varying_uv(0, 2) - varying_uv(0, 0), 0., 0.));
 
-    Vec4f ud = Vec4f(varying_uv(0, 1) - varying_uv(0, 0),
-                     varying_uv(0, 2) - varying_uv(0, 0), 0., 0.);
-    Vec4f vd = Vec4f(varying_uv(1, 1) - varying_uv(1, 0),
-                     varying_uv(1, 2) - varying_uv(1, 0), 0., 0.);
+    Vec4f j = AI * Matrix(Vec4f(varying_uv(1, 1) - varying_uv(1, 0),
+                                varying_uv(1, 2) - varying_uv(1, 0), 0., 0.));
 
     Matrix BTN = Matrix(4, 4);
 
