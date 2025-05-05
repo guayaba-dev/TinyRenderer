@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <iostream>
 
 #include "SDL2/SDL.h"
 #include "geometry.h"
@@ -97,31 +98,31 @@ struct TexturingShader : public IShader {
   }
 };
 
-/*
-struct TexturingShader : public IShader {
-  Vec3f varying_intensity;
+struct zBufferShader : public IShader {
+  Matrix ndc_tri = Matrix(4, 4);
 
   virtual Vec3f vertex(int face, int idVert) override {
-    varying_intensity[idVert] =
-        std::max(0.f, model->vertexNomal(model->vertexNomalsIds(face)[idVert]) *
-                          lightDirection);  // get diffuse lighting intensity
-
     Vec4f gl_Vertex = ViewPort * Projection * ModelView *
                       Vec4f(model->vert(model->face(face)[idVert]), 1.);
+
+    ndc_tri.setColumn(idVert, gl_Vertex.hogenize());
 
     return gl_Vertex.hogenize().xyz();
   }
 
   virtual bool fragment(Vec4f bar, TGAColor& color) override {
-    float intensity = Vec4f(varying_intensity, 0.f) *
-                      bar;  // interpolate intensity for the current pixel
-    color = TGAColor(255, 255, 255) * intensity;  // well duh
+    float intensity = Vec4f(ndc_tri * bar).z /
+                      DEPTH;  // interpolate intensity for the current pixel
+
+    std::cerr << intensity << "\n";
+
+    color = TGAColor(255, 255, 255) * intensity;
     return false;
   }
 };
-*/
 
 TexturingShader shader;
+zBufferShader shader2;
 
 int main(int argc, char** argv) {
   if (2 == argc) {
@@ -160,10 +161,10 @@ int main(int argc, char** argv) {
     for (int i = 0; i < model->nfaces(); i++) {
       Vec3f screen_coords[3];
       for (int j = 0; j < 3; j++) {
-        screen_coords[j] = shader.vertex(i, j);
+        screen_coords[j] = shader2.vertex(i, j);
       }
 
-      drawTriangle(screen_coords, z_buffer, renderer, shader,
+      drawTriangle(screen_coords, z_buffer, renderer, shader2,
                    Vec2f(WIDTH, HEIGHT));
     }
   }
