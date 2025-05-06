@@ -1,5 +1,9 @@
 #include "gl.h"
 
+#include <SDL2/SDL_render.h>
+
+#include <iostream>
+
 #include "geometry.h"
 #include "tgaimage.h"
 
@@ -22,7 +26,7 @@ Vec4f getBarycentric(Vec3f vertex[], Vec3i point) {
   return Vec4f(1 - (u.x / u.z + u.y / u.z), u.x / u.z, u.y / u.z, 0.f);
 }
 
-void drawTriangle(Vec3f points[], float z_buffer[], SDL_Renderer* renderer,
+void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
                   IShader& shader, Vec2f windowDimensions) {
   Vec2f bboxmin(windowDimensions);
   Vec2f bboxmax(0, 0);
@@ -51,7 +55,7 @@ void drawTriangle(Vec3f points[], float z_buffer[], SDL_Renderer* renderer,
         P.z = P.z + points[i].z * barycentric[i];
       }
 
-      if (z_buffer[P.x + P.y * (int)windowDimensions.x] < P.z) {
+      if (P.z > z_buffer[P.x + P.y * (int)windowDimensions.x]) {
         z_buffer[P.x + P.y * (int)windowDimensions.x] = P.z;
 
         TGAColor shadedColor;
@@ -60,12 +64,22 @@ void drawTriangle(Vec3f points[], float z_buffer[], SDL_Renderer* renderer,
           continue;
         }
 
-        SDL_SetRenderDrawColor(renderer, shadedColor[2], shadedColor[1],
-                               shadedColor[0], 100);
-
-        SDL_RenderDrawPoint(renderer, windowDimensions.x - P.x,
-                            windowDimensions.y - P.y);
+        buffer->set(P.x, P.y, shadedColor);
       }
+    }
+  }
+}
+
+void bufferToRender(SDL_Renderer* renderer, TGAImage* buffer) {
+  buffer->flip_vertically();
+
+  for (int j = 0; j < buffer->get_height(); j++) {
+    for (int i = 0; i < buffer->get_width(); i++) {
+      TGAColor pixelColor = buffer->get(i, j);
+
+      SDL_SetRenderDrawColor(renderer, pixelColor[2], pixelColor[1],
+                             pixelColor[0], 255);
+      SDL_RenderDrawPoint(renderer, i, j);
     }
   }
 }

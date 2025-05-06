@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <iostream>
 
 #include "SDL2/SDL.h"
 #include "geometry.h"
@@ -20,7 +19,8 @@ const int DEPTH = 255;
 Model* model = NULL;
 float* z_buffer = NULL;
 Vec3f lightDirection = Vec3f(1., 1., 1);  // light
-Vec3f eye(1, 1, 3);
+// Vec3f eye(1, 1, 3);
+Vec3f eye(1, 1, 1);
 Vec3f center(0, 0, 0);
 
 SDL_Window* window = nullptr;
@@ -114,8 +114,6 @@ struct zBufferShader : public IShader {
     float intensity = Vec4f(ndc_tri * bar).z /
                       DEPTH;  // interpolate intensity for the current pixel
 
-    std::cerr << intensity << "\n";
-
     color = TGAColor(255, 255, 255) * intensity;
     return false;
   }
@@ -158,15 +156,35 @@ int main(int argc, char** argv) {
     lightDirection =
         Vec4f(Projection * ModelView * Vec4f(lightDirection, 0.)).xyz();
 
+    TGAImage* z_shadedBuffer = new TGAImage(WIDTH, HEIGHT, TGAImage::RGBA);
+    TGAImage* finalRender = new TGAImage(WIDTH, HEIGHT, TGAImage::RGBA);
+
     for (int i = 0; i < model->nfaces(); i++) {
       Vec3f screen_coords[3];
       for (int j = 0; j < 3; j++) {
         screen_coords[j] = shader2.vertex(i, j);
       }
 
-      drawTriangle(screen_coords, z_buffer, renderer, shader2,
+      drawTriangle(screen_coords, z_buffer, z_shadedBuffer, shader2,
                    Vec2f(WIDTH, HEIGHT));
     }
+
+    z_buffer = new float[WIDTH * HEIGHT];
+    for (int i = 0; i < WIDTH * HEIGHT; i++) {
+      z_buffer[i] = std::numeric_limits<int>::min();
+    }
+
+    for (int i = 0; i < model->nfaces(); i++) {
+      Vec3f screen_coords[3];
+      for (int j = 0; j < 3; j++) {
+        screen_coords[j] = shader.vertex(i, j);
+      }
+
+      drawTriangle(screen_coords, z_buffer, finalRender, shader,
+                   Vec2f(WIDTH, HEIGHT));
+    }
+
+    bufferToRender(renderer, finalRender);
   }
 
   SDL_SetRenderTarget(renderer, NULL);
