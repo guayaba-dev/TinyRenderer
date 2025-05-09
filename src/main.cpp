@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <iostream>
 
 #include "SDL2/SDL.h"
 #include "geometry.h"
@@ -18,9 +19,10 @@ const int WIDTH = 700;
 const int DEPTH = 255;
 Model* model = NULL;
 float* z_buffer = NULL;
+float* z_ShadowBuffer = NULL;
 Vec3f lightDirection = Vec3f(1., 1., 1);  // light
-// Vec3f eye(1, 1, 3);
-Vec3f eye(1, 1, 1);
+Vec3f lighteye(1, 1, 1);
+Vec3f eye(1, 1, 3);
 Vec3f center(0, 0, 0);
 
 SDL_Window* window = nullptr;
@@ -28,13 +30,15 @@ SDL_Renderer* renderer = nullptr;
 SDL_Texture* canvas = nullptr;
 
 struct TexturingShader : public IShader {
-  Matrix varying_uv = Matrix(4, 4);   // uv coords
-  Matrix varying_tri = Matrix(4, 4);  // triangle ModelView
-  Matrix varying_nrm = Matrix(4, 4);  // normal per vertex
-  Matrix ndc_tri = Matrix(4, 4);      // triangle in device coordenates
-
-  Matrix uniform_MV = Matrix(4, 4);    // Model view matrix
-  Matrix uniform_MVIT = Matrix(4, 4);  // ModelView inverse traspose
+  Matrix varying_uv = Matrix(4, 4);            // uv coords
+  Matrix varying_tri = Matrix(4, 4);           // triangle ModelView
+  Matrix varying_nrm = Matrix(4, 4);           // normal per vertex
+  Matrix varying_shadow_depth = Matrix(4, 4);  // DEPTH per vertex
+  Matrix ndc_tri = Matrix(4, 4);               // triangle in device coordenates
+  Matrix uniform_LMV = Matrix(4, 4);           // Matrix to lightPos
+  Matrix uniform_MV = Matrix(4, 4);            // Model view matrix
+  Matrix uniform_MVIT = Matrix(4, 4);          // ModelView inverse traspose
+  TGAImage uniform_shadowMap;
 
   virtual Vec3f vertex(int face, int idVert) override {
     varying_uv.setColumn(
@@ -44,6 +48,12 @@ struct TexturingShader : public IShader {
         Vec4f(model->vertexNomal(model->vertexNomalsIds(face)[idVert]), 0.);
     nrm = uniform_MVIT * nrm;
     varying_nrm.setColumn(idVert, nrm);
+
+    Vec4f shadowVerts =
+        (uniform_LMV *
+         Matrix(Vec4f(model->vert(model->face(face)[idVert]), 1)));
+
+    varying_shadow_depth.setColumn(idVert, shadowVerts);
 
     Vec4f glVertex = Projection * ModelView *
                      Matrix(Vec4f(model->vert(model->face(face)[idVert]), 1));
@@ -60,6 +70,24 @@ struct TexturingShader : public IShader {
   virtual bool fragment(Vec4f bar, TGAColor& color) override {
     Vec4f normalBar = (varying_nrm * Matrix(bar));
     Vec4f uvBar = varying_uv * Matrix(bar);
+    Vec4f shadowMapBar = (varying_shadow_depth * Matrix(bar));
+    shadowMapBar = shadowMapBar * (1. / shadowMapBar[3]);
+
+    int idx = int(shadowMapBar[0]) +
+              int(shadowMapBar[1]) * WIDTH;  // index in the shadowbuffer array
+
+    if (z_ShadowBuffer[idx] > shadowMapBar[2]) {
+      std::cerr << " ImageBuffer: "
+                << uniform_shadowMap.get(shadowMapBar[0], shadowMapBar[1])[0]
+                << "\n z_shadedBuffer: " << z_ShadowBuffer[idx]
+                << "\n z_discarted value: " << shadowMapBar[2]
+                << "\n ------------------------------ \n";
+
+      return true;
+    }
+    if (uniform_shadowMap.get(shadowMapBar[0], shadowMapBar[1])[0] >
+        shadowMapBar[2])
+      return true;
 
     Matrix A = Matrix::identity(3);
 
@@ -134,6 +162,11 @@ int main(int argc, char** argv) {
     z_buffer[i] = std::numeric_limits<int>::min();
   }
 
+  z_ShadowBuffer = new float[WIDTH * HEIGHT];
+  for (int i = 0; i < WIDTH * HEIGHT; i++) {
+    z_buffer[i] = std::numeric_limits<int>::min();
+  }
+
   {  // window set up
     SDL_Init(SDL_INIT_VIDEO);
     SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
@@ -145,16 +178,9 @@ int main(int argc, char** argv) {
   }
 
   {  // draw model Logic
-    lookat(center, eye, Vec3f(0., 1., 0.));
+    lookat(center, lighteye, Vec3f(0., 1., 0.));
     viewport(WIDTH, HEIGHT, 0, 0);
     projection(-1.f / (eye - center).norm());
-
-    shader.uniform_MV = Projection * ModelView;
-    shader.uniform_MVIT(4, 4);
-    shader.uniform_MV.inverse(shader.uniform_MVIT);
-    shader.uniform_MVIT = shader.uniform_MVIT.transpose();
-    lightDirection =
-        Vec4f(Projection * ModelView * Vec4f(lightDirection, 0.)).xyz();
 
     TGAImage* z_shadedBuffer = new TGAImage(WIDTH, HEIGHT, TGAImage::RGBA);
     TGAImage* finalRender = new TGAImage(WIDTH, HEIGHT, TGAImage::RGBA);
@@ -165,14 +191,22 @@ int main(int argc, char** argv) {
         screen_coords[j] = shader2.vertex(i, j);
       }
 
-      drawTriangle(screen_coords, z_buffer, z_shadedBuffer, shader2,
+      drawTriangle(screen_coords, z_ShadowBuffer, z_shadedBuffer, shader2,
                    Vec2f(WIDTH, HEIGHT));
     }
 
-    z_buffer = new float[WIDTH * HEIGHT];
-    for (int i = 0; i < WIDTH * HEIGHT; i++) {
-      z_buffer[i] = std::numeric_limits<int>::min();
-    }
+    shader.uniform_LMV = ViewPort * Projection * ModelView;
+
+    lookat(center, eye, Vec3f(0., 1., 0.));
+    viewport(WIDTH, HEIGHT, 0, 0);
+    projection(-1.f / (eye - center).norm());
+
+    shader.uniform_MV = Projection * ModelView;
+    shader.uniform_MVIT(4, 4);
+    shader.uniform_MV.inverse(shader.uniform_MVIT);
+    shader.uniform_MVIT = shader.uniform_MVIT.transpose();
+    lightDirection =
+        Vec4f(Projection * ModelView * Vec4f(lightDirection, 0.)).xyz();
 
     for (int i = 0; i < model->nfaces(); i++) {
       Vec3f screen_coords[3];
