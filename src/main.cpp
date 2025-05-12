@@ -22,7 +22,7 @@ float* z_buffer = NULL;
 float* z_ShadowBuffer = NULL;
 Vec3f lightDirection = Vec3f(1., 1., 1);  // light
 Vec3f lighteye(1, 1, 1);
-Vec3f eye(1, 1, 3);
+Vec3f eye(0, 0, 5);
 Vec3f center(0, 0, 0);
 
 SDL_Window* window = nullptr;
@@ -53,7 +53,7 @@ struct TexturingShader : public IShader {
         (uniform_LMV *
          Matrix(Vec4f(model->vert(model->face(face)[idVert]), 1)));
 
-    varying_shadow_depth.setColumn(idVert, shadowVerts);
+    varying_shadow_depth.setColumn(idVert, shadowVerts.hogenize());
 
     Vec4f glVertex = Projection * ModelView *
                      Matrix(Vec4f(model->vert(model->face(face)[idVert]), 1));
@@ -71,23 +71,13 @@ struct TexturingShader : public IShader {
     Vec4f normalBar = (varying_nrm * Matrix(bar));
     Vec4f uvBar = varying_uv * Matrix(bar);
     Vec4f shadowMapBar = (varying_shadow_depth * Matrix(bar));
-    shadowMapBar = shadowMapBar * (1. / shadowMapBar[3]);
 
     int idx = int(shadowMapBar[0]) +
               int(shadowMapBar[1]) * WIDTH;  // index in the shadowbuffer array
 
-    if (z_ShadowBuffer[idx] > shadowMapBar[2]) {
-      std::cerr << " ImageBuffer: "
-                << uniform_shadowMap.get(shadowMapBar[0], shadowMapBar[1])[0]
-                << "\n z_shadedBuffer: " << z_ShadowBuffer[idx]
-                << "\n z_discarted value: " << shadowMapBar[2]
-                << "\n ------------------------------ \n";
+    uniform_shadowMap.get(shadowMapBar[0], shadowMapBar[1]);
 
-      return true;
-    }
-    if (uniform_shadowMap.get(shadowMapBar[0], shadowMapBar[1])[0] >
-        shadowMapBar[2])
-      return true;
+    float shadow = 0.3 + 0.7 * (z_ShadowBuffer[idx] < shadowMapBar[2] + 43.34);
 
     Matrix A = Matrix::identity(3);
 
@@ -120,7 +110,7 @@ struct TexturingShader : public IShader {
 
     float lightIntensity = std::max((normalMapped * lightDirection), 0.f);
 
-    color = model->getDiffuse(uvBar.xy()) * lightIntensity;
+    color = model->getDiffuse(uvBar.xy()) * lightIntensity * shadow;
 
     return false;
   }
