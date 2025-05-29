@@ -1,22 +1,15 @@
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
 
-#include <algorithm>
-#include <cassert>
-#include <cstddef>
-#include <iostream>
-
-#include "SDL2/SDL.h"
 #include "geometry.h"
 #include "gl.h"
 #include "model.h"
 #include "tgaimage.h"
 
-int samples = 0;
-
 const int HEIGHT = 700;
 const int WIDTH = 700;
 const int DEPTH = 255;
+
 Model* model = NULL;
 float* z_buffer = NULL;
 float* z_ShadowBuffer = NULL;
@@ -77,7 +70,7 @@ struct TexturingShader : public IShader {
 
     uniform_shadowMap.get(shadowMapBar[0], shadowMapBar[1]);
 
-    float shadow = 0.3 + 0.7 * (z_ShadowBuffer[idx] < shadowMapBar[2] + 43.34);
+    float shadow = 0.3 + 0.7 * (z_ShadowBuffer[idx] < shadowMapBar[2] + 47.61);
 
     Matrix A = Matrix::identity(3);
 
@@ -170,7 +163,7 @@ int main(int argc, char** argv) {
   {  // draw model Logic
     lookat(center, lighteye, Vec3f(0., 1., 0.));
     viewport(WIDTH, HEIGHT, 0, 0);
-    projection(-1.f / (eye - center).norm());
+    projection(0);
 
     TGAImage* z_shadedBuffer = new TGAImage(WIDTH, HEIGHT, TGAImage::RGBA);
     TGAImage* finalRender = new TGAImage(WIDTH, HEIGHT, TGAImage::RGBA);

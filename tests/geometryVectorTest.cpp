@@ -1,5 +1,4 @@
 #include <cassert>
-#include <iostream>
 
 void testVectorDotProduct() {}
 

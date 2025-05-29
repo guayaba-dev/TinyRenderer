@@ -1,0 +1,194 @@
+#pragma once
+
+#include <cassert>
+#include <complex>
+#include <cstddef>
+#include <iostream>
+#include <vector>
+
+#define MAX_ALLOC 4
+
+template <int s>
+struct vec {
+  double data[s] = {0};
+
+  double& operator[](const int i) {
+    assert(i < s && i >= 0);
+    return data[i];
+  }
+
+  double operator[](const int i) const {
+    assert(i < s && i >= 0);
+    return data[i];
+  }
+};
+
+template <int n, int m>
+class matrix {
+  std::vector<float> data = std::vector<float>(n * m);
+  int rows = n;
+  int collumns = m;
+
+ public:
+  static matrix<n, m> indentity() {
+    matrix<n, m> result;
+
+    for (int i = 0; i < result.rows; i++)
+      for (int j = 0; j < result.collumns; j++)
+        result(i, j) = (i == j);  // results in one when true
+
+    return result;
+  }
+
+  float& operator()(const int& row, const int& collumn) {
+    return data[collumn + row * rows];
+  }
+
+  const float& operator()(const int& row, const int& collumn) const {
+    return data[collumn + row * rows];
+  }
+
+  vec<m> getRow(const int idx) {
+    vec<m> res;
+    for (int i = m; i--;) res[i] = data[i + idx * rows];
+    return res;
+  }
+
+  void setRow(const vec<m> vec, int idx) {
+    for (int i = m; i--;) data[i + idx * rows] = vec[i];
+  }
+
+  vec<n> getCol(const int idx) {
+    vec<n> res;
+    for (int i = n; i--;) res[i] = data[idx + i * rows];
+    return res;
+  }
+
+  void setCol(vec<n> vec, int idx) {
+    for (int i = n; i--;) data[idx + i * rows] = vec[i];
+  }
+
+  matrix<n, m> transpose() {
+    matrix<m, n> res;
+
+    for (int i = n; i--;)
+      for (int j = m; j--; res(j, i) = this(i, j));
+  }
+};
+
+/////////////////////////////////////////////////////////////////////////////
+
+template <int s>
+vec<s> operator+(const vec<s>& lhs, const vec<s>& rhs) {
+  vec<s> ret = rhs;
+  for (int i = 0; i < s; i++) ret[i] = lhs[i] + ret[i];
+  return ret;
+}
+
+template <int s>
+vec<s> operator-(const vec<s>& lhs, const vec<s>& rhs) {
+  vec<s> ret = rhs;
+  for (int i = 0; i < s; i++) ret[i] = lhs[i] - ret[i];
+  return ret;
+}
+
+template <int s>
+vec<s> operator*(const float& lhs, const vec<s>& rhs) {
+  vec<s> ret = rhs;
+  for (int i = 0; i < s; i++) ret[i] = lhs * ret[i];
+  return ret;
+}
+
+template <int s>
+float operator*(const vec<s>& lhs, const vec<s>& rhs) {
+  float ret = 0;
+  for (int i = 0; i < s; i++) ret += lhs[i] * rhs[i];
+  return ret;
+}
+
+template <int s>
+vec<s> operator/(const vec<s>& lhs, const vec<s>& rhs) {
+  vec<s> ret = lhs;
+  for (int i = 0; i < s; i++) ret[i] /= lhs[i];
+  return ret;
+}
+
+template <int s, int n>
+vec<n> proj(const vec<s>& v) {
+  vec<s> ret;
+  for (int i = 0; i < s; i++) ret[i] = v[i];
+  return ret;
+}
+
+template <int s, int n>
+vec<n> embed(const vec<s>& v, const int& prefix = 0) {
+  vec<s> ret;
+  for (int i = 0; i < n; i++) ret[i] = v[i];
+  for (int i = n; i < s; i++) ret[i] = prefix;
+  return ret;
+}
+
+template <int r1, int c1, int c2>
+matrix<r1, c2> operator*(matrix<r1, c1> mat1, matrix<c1, c2> mat2) {
+  matrix<c1, c2> res;
+
+  for (int i = r1; i--;)
+    for (int j = c2; j--;) res(i, j) = mat1.getRow(i) * mat2.getCol(j);
+
+  return res;
+}
+
+template <int r1, int c1, int c2>
+matrix<r1, c2> operator*(matrix<r1, c1> mat1, vec<c1> vec) {
+  matrix<c1, c2> res;
+
+  for (int i = r1; i--;)
+    for (int j = c2; j--;) res(i, j) = mat1.getRow(i) * vec;
+
+  return res;
+}
+
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+// LU sustitution optimization for inverse matrices
+// Here will functions for that purpose only
+// UP forward gauss jordan
+// LOWER is coeficients for the UP jordan
+
+template <int n, int m>
+void getLU(matrix<n, m> A, matrix<n, m>& L, matrix<n, m>& U) {
+  float coeff = 0.0;
+  U = A;
+
+  for (int i = 0; i < m; i++) {    // collumn
+    for (int j = i; j < n; j++) {  // rows
+      // UP Matrix calc
+
+      coeff = U(j, i) / U(i, i);
+
+      L(j, i) = coeff;
+
+      if (coeff == 1) continue;
+
+      U.setRow(U.getRow(j) - (coeff * U.getRow(i)), j);
+    }
+  }
+}
+
+template <int r1, int c1, int c2>
+void backwardsGaussianMatrix(matrix<r1, c1>& U, matrix<c1, c2>& x,
+                             matrix<c1, c2>& Z) {
+  for (int i = 0; i < c2; i++)
+    for (int j = r1; j--;)
+      x(j, i) = (Z(j, i) - U.getRow(j) * x.getCol(i)) / U(i, i);
+}
+
+template <int r1, int c1, int c2>
+void forwardGaussianMatrix(matrix<r1, c1>& L, matrix<c1, c2>& x,
+                           matrix<c1, c2>& C) {
+  for (int i = 0; i < c2; i++)
+    for (int j = 0; j < r1; j++)
+      x(j, i) = (C(j, i) - L.getRow(j) * x.getCol(i));
+}
+
+void LUInverse() {}
