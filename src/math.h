@@ -180,7 +180,7 @@ void backwardsGaussianMatrix(matrix<r1, c1>& U, matrix<c1, c2>& x,
                              matrix<c1, c2>& Z) {
   for (int i = 0; i < c2; i++)
     for (int j = r1; j--;)
-      x(j, i) = (Z(j, i) - U.getRow(j) * x.getCol(i)) / U(i, i);
+      x(j, i) = (Z(j, i) - U.getRow(j) * x.getCol(i)) / U(j, j);
 }
 
 template <int r1, int c1, int c2>
@@ -191,4 +191,15 @@ void forwardGaussianMatrix(matrix<r1, c1>& L, matrix<c1, c2>& x,
       x(j, i) = (C(j, i) - L.getRow(j) * x.getCol(i));
 }
 
-void LUInverse() {}
+template <int n, int m>
+void LUInverse(matrix<n, m>& A, matrix<n, m>& AI) {
+  matrix<n, m> L, U, LI, I;
+
+  I = matrix<n, m>::indentity();
+
+  getLU(A, L, U);
+
+  forwardGaussianMatrix(L, LI, I);
+
+  backwardsGaussianMatrix(U, AI, LI);
+}

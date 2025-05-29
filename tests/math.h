@@ -36,12 +36,16 @@ inline void foo() {
 
   getLU(A, L, U);
 
+  std::cout << "L ------------------------\n";
+
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       std::cout << L(i, j) << " ";
     }
     std::cout << '\n';
   }
+
+  std::cout << "U ------------------------\n";
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
@@ -59,11 +63,22 @@ inline void foo() {
     std::cout << '\n';
   }
 
-  matrix<3, 1> x;
+  matrix<3, 3> AI;
+  LUInverse(A, AI);
 
-  matrix<3, 1> Z;
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      std::cout << AI(i, j) << " ";
+    }
+    std::cout << '\n';
+  }
 
-  forwardGaussianMatrix(L, Z, C);
+  matrix<3, 3> I = AI * A;
 
-  backwardsGaussianMatrix(U, x, Z);
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      std::cout << I(i, j) << " ";
+    }
+    std::cout << '\n';
+  }
 }
