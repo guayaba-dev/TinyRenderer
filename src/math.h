@@ -1,9 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <complex>
-#include <cstddef>
-#include <iostream>
 #include <vector>
 
 #define MAX_ALLOC 4
@@ -202,4 +199,15 @@ void LUInverse(matrix<n, m>& A, matrix<n, m>& AI) {
   forwardGaussianMatrix(L, LI, I);
 
   backwardsGaussianMatrix(U, AI, LI);
+}
+
+template <int n, int m>
+void solve(matrix<n, m>& A, matrix<n, m>& X, matrix<n, m>& C) {
+  matrix<n, m> L, U, Z;
+
+  getLU(A, L, U);
+
+  forwardGaussianMatrix(L, Z, C);
+
+  backwardsGaussianMatrix(U, X, Z);
 }
