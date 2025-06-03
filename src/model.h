@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "geometry.h"
+#include "l_matrix.h"
 #include "tgaimage.h"
 
 class Model {

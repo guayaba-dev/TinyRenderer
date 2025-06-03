@@ -1,11 +1,11 @@
 #include <SDL2/SDL.h>
 
-#include "geometry.h"
+#include "l_matrix.h"
 #include "tgaimage.h"
 
-extern Matrix Projection;
-extern Matrix ModelView;
-extern Matrix ViewPort;
+extern matrix<4, 4> Projection;
+extern matrix<4, 4> ModelView;
+extern matrix<4, 4> ViewPort;
 
 struct IShader {
   virtual ~IShader();

@@ -3,8 +3,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "../src/geometry.h"
-#include "../src/math.h"
+#include "../src/l_matrix.h"
 
 inline void foo() {
   vec<3> a;

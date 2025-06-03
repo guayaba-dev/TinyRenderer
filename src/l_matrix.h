@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cassert>
+#include <cmath>
+#include <type_traits>
 #include <vector>
 
 #define MAX_ALLOC 4
@@ -18,6 +20,12 @@ struct vec {
     assert(i < s && i >= 0);
     return data[i];
   }
+
+  template <typename... ARGS,
+            typename = typename std::enable_if<sizeof...(ARGS) == s>::type>
+  vec(ARGS... args) : data{static_cast<double>(args)...} {}
+
+  vec() = default;
 };
 
 template <int n, int m>
@@ -27,7 +35,7 @@ class matrix {
   int collumns = m;
 
  public:
-  static matrix<n, m> indentity() {
+  static matrix<n, m> identity() {
     matrix<n, m> result;
 
     for (int i = 0; i < result.rows; i++)
@@ -145,6 +153,22 @@ matrix<r1, c2> operator*(matrix<r1, c1> mat1, vec<c1> vec) {
   return res;
 }
 
+template <int s>
+float norm(vec<s> v) {
+  return std::sqrt(v * v);
+};
+
+template <int s>
+vec<s> normalize(vec<s> v) {
+  return v / norm(v);
+};
+
+vec<3> crossProduct(vec<3> a, vec<3> b);
+
+typedef vec<2> Vec2f;
+typedef vec<3> Vec3f;
+typedef vec<4> Vec4f;
+
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 // LU sustitution optimization for inverse matrices
@@ -192,7 +216,7 @@ template <int n, int m>
 void LUInverse(matrix<n, m>& A, matrix<n, m>& AI) {
   matrix<n, m> L, U, LI, I;
 
-  I = matrix<n, m>::indentity();
+  I = matrix<n, m>::identity();
 
   getLU(A, L, U);
 

@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 
-#include "geometry.h"
 #include "tgaimage.h"
 
 Model::Model(const char *filename)
