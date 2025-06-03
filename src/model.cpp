@@ -26,20 +26,20 @@ Model::Model(const char *filename)
     if (!line.compare(0, 2, "v ")) {
       iss >> trash;
       Vec3f v;
-      for (int i = 0; i < 3; i++) iss >> v.raw[i];
+      for (int i = 0; i < 3; i++) iss >> v[i];
       verts_.push_back(v);
 
     } else if (!line.compare(0, 3, "vt ")) {
       iss >> trash >> trash;
       Vec2f tuv;
-      for (int i = 0; i < 2; i++) iss >> tuv.raw[i];
+      for (int i = 0; i < 2; i++) iss >> tuv[i];
       tex_coords_.push_back(tuv);
     }
 
     else if (!line.compare(0, 3, "vn ")) {
       iss >> trash >> trash;
       Vec3f vn;
-      for (int i = 0; i < 3; i++) iss >> vn.raw[i];
+      for (int i = 0; i < 3; i++) iss >> vn[i];
       vertexNomals.push_back(vn);
     }
 
@@ -84,16 +84,15 @@ void Model::load_texture(std::string filename, const char *suffix,
 }
 
 TGAColor Model::getDiffuse(Vec2f uvf) {
-  Vec2i uv(uvf.x * diffusemap_.get_width(), uvf.y * diffusemap_.get_height());
-  return diffusemap_.get(uv.x, uv.y);
+  Vec2f uv(uvf[0] * diffusemap_.get_width(), uvf[1] * diffusemap_.get_height());
+  return diffusemap_.get(uv[0], uv[1]);
 }
 
 Vec3f Model::getNormal(Vec2f uvf) {
-  Vec2i uv(uvf.x * normalmap_.get_width(), uvf.y * normalmap_.get_height());
-  TGAColor normalmap_Color = normalmap_.get(uv.x, uv.y);
-  return Vec3f(normalmap_Color[2] / 255.f, normalmap_Color[1] / 255.f,
-               normalmap_Color[0] / 255.f) *
-             2.f -
+  Vec2f uv(uvf[0] * normalmap_.get_width(), uvf[1] * normalmap_.get_height());
+  TGAColor normalmap_Color = normalmap_.get(uv[0], uv[1]);
+  return 2.f * Vec3f(normalmap_Color[2] / 255.f, normalmap_Color[1] / 255.f,
+                     normalmap_Color[0] / 255.f) -
          Vec3f(1., 1., 1.);
 }
 
