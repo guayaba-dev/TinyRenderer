@@ -23,7 +23,7 @@ Vec4f getBarycentric(Vec3f vertex[], Vec3f point) {
 
   if (abs(u[2]) < 1) return Vec4f(-1, 1, 1, 0);
 
-  return Vec4f(1 - (u[0] + u[1]) / u[2], u[0] / u[2], u[1] / u[3], 0.f);
+  return Vec4f(1 - (u[0] + u[1]) / u[2], u[0] / u[2], u[1] / u[2], 0.f);
 }
 
 void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
@@ -65,7 +65,7 @@ void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
           continue;
         }
 
-        buffer->set(P[0], P[1], shadedColor);
+        buffer->set((int)P[0], (int)P[1], shadedColor);
       }
     }
   }

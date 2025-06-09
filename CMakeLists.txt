@@ -4,6 +4,20 @@ project(TinyRenderer)
 
 set(CMAKE_C_STANDARD 11)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(SANITAZER_FLAGS
+     -fno-omit-frame-pointer
+     -fsanitize=address,undefined,leak
+     -fsanitize-address-use-after-scope
+     -fsanitize=float-divide-by-zero
+     -fsanitize=null,alignment   
+  )
+
+
+  add_compile_options("${SANITAZER_FLAGS}")
+  add_link_options("${SANITAZER_FLAGS}")
+endif()
+
 #SDL package
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})

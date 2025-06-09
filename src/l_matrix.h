@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <iostream>
 #include <type_traits>
 #include <vector>
 
@@ -16,7 +17,7 @@ struct vec {
     return data[i];
   }
 
-  double operator[](const int i) const {
+  const double operator[](const int i) const {
     assert(i < s && i >= 0);
     return data[i];
   }
@@ -31,53 +32,53 @@ struct vec {
 template <int n, int m>
 class matrix {
   std::vector<float> data = std::vector<float>(n * m);
-  int rows = n;
-  int collumns = m;
 
  public:
   static matrix<n, m> identity() {
     matrix<n, m> result;
 
-    for (int i = 0; i < result.rows; i++)
-      for (int j = 0; j < result.collumns; j++)
+    for (int i = 0; i < n; i++)
+      for (int j = 0; j < m; j++)
         result(i, j) = (i == j);  // results in one when true
 
     return result;
   }
 
   float& operator()(const int& row, const int& collumn) {
-    return data[collumn + row * rows];
+    return data[collumn + row * m];
   }
 
   const float& operator()(const int& row, const int& collumn) const {
-    return data[collumn + row * rows];
+    return data[collumn + row * m];
   }
 
   vec<m> getRow(const int idx) {
     vec<m> res;
-    for (int i = m; i--;) res[i] = data[i + idx * rows];
+    for (int i = m - 1; i--;) res[i] = data[i + idx * m];
     return res;
   }
 
   void setRow(const vec<m> vec, int idx) {
-    for (int i = m; i--;) data[i + idx * rows] = vec[i];
+    for (int i = m - 1; i--;) data[i + idx * m] = vec[i];
   }
 
   vec<n> getCol(const int idx) {
     vec<n> res;
-    for (int i = n; i--;) res[i] = data[idx + i * rows];
+    for (int i = n - 1; i--;) res[i] = data[idx + i * m];
     return res;
   }
 
   void setCol(vec<n> vec, int idx) {
-    for (int i = n; i--;) data[idx + i * rows] = vec[i];
+    for (int i = n - 1; i--;) data[idx + i * m] = vec[i];
   }
 
   matrix<n, m> transpose() {
     matrix<m, n> res;
 
-    for (int i = n; i--;)
-      for (int j = m; j--; res(j, i) = this(i, j));
+    for (int i = n - 1; i--;)
+      for (int j = m - 1; j--; res(j, i) = (*this)(i, j));
+
+    return res;
   }
 };
 
@@ -112,24 +113,24 @@ float operator*(const vec<s>& lhs, const vec<s>& rhs) {
 }
 
 template <int s>
-vec<s> operator/(const vec<s>& lhs, const vec<s>& rhs) {
+vec<s> operator/(const vec<s>& lhs, const float& rhs) {
   vec<s> ret = lhs;
-  for (int i = 0; i < s; i++) ret[i] /= lhs[i];
+  for (int i = 0; i < s; i++) ret[i] = ret[i] / rhs;
   return ret;
 }
 
 template <int s, int n>
 vec<n> proj(const vec<s>& v) {
-  vec<s> ret;
-  for (int i = 0; i < s; i++) ret[i] = v[i];
+  vec<n> ret;
+  for (int i = 0; i < n; i++) ret[i] = v[i];
   return ret;
 }
 
 template <int s, int n>
-vec<n> embed(const vec<s>& v, const int& prefix = 0) {
-  vec<s> ret;
-  for (int i = 0; i < n; i++) ret[i] = v[i];
-  for (int i = n; i < s; i++) ret[i] = prefix;
+vec<n> embed(const vec<s>& v, const float& prefix = 0) {
+  vec<n> ret;
+  for (int i = 0; i < s; i++) ret[i] = v[i];
+  for (int i = s; i < n; i++) ret[i] = prefix;
   return ret;
 }
 
@@ -143,12 +144,11 @@ matrix<r1, c2> operator*(matrix<r1, c1> mat1, matrix<c1, c2> mat2) {
   return res;
 }
 
-template <int r1, int c1, int c2>
-matrix<r1, c2> operator*(matrix<r1, c1> mat1, vec<c1> vec) {
-  matrix<c1, c2> res;
+template <int r1, int c1>
+matrix<r1, 1> operator*(matrix<r1, c1> mat1, vec<c1> vec) {
+  matrix<r1, 1> res = matrix<r1, 1>();
 
-  for (int i = r1; i--;)
-    for (int j = c2; j--;) res(i, j) = mat1.getRow(i) * vec;
+  for (int i = 0; i < c1; i++) res(i, 0) = mat1.getRow(0) * vec;
 
   return res;
 }
@@ -163,11 +163,11 @@ vec<s> normalize(vec<s> v) {
   return v / norm(v);
 };
 
-vec<3> crossProduct(vec<3> a, vec<3> b);
-
 typedef vec<2> Vec2f;
 typedef vec<3> Vec3f;
 typedef vec<4> Vec4f;
+
+Vec3f crossProduct(Vec3f a, Vec3f b);
 
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
