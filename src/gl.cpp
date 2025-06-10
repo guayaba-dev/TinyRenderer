@@ -2,6 +2,8 @@
 
 #include <SDL2/SDL_render.h>
 
+#include <iostream>
+
 #include "l_matrix.h"
 #include "tgaimage.h"
 
@@ -100,7 +102,14 @@ void lookat(Vec3f center, Vec3f eye, Vec3f up) {
     Traslation(i, 3) = -center[i];
   }
 
+  std::cerr << "------------\n Minv\n";
+  printMath(Minv);
+  std::cerr << "------------\n Traslation\n";
+  printMath(Traslation);
+
   ModelView = Minv * Traslation;
+  std::cerr << "------------\n ModelView\n";
+  printMath(ModelView);
 }
 
 void viewport(int w, int h, int x, int y) {

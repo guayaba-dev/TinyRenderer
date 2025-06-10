@@ -54,22 +54,22 @@ class matrix {
 
   vec<m> getRow(const int idx) {
     vec<m> res;
-    for (int i = m - 1; i--;) res[i] = data[i + idx * m];
+    for (int i = m; i--;) res[i] = data[i + idx * m];
     return res;
   }
 
   void setRow(const vec<m> vec, int idx) {
-    for (int i = m - 1; i--;) data[i + idx * m] = vec[i];
+    for (int i = m; i--;) data[i + idx * m] = vec[i];
   }
 
   vec<n> getCol(const int idx) {
     vec<n> res;
-    for (int i = n - 1; i--;) res[i] = data[idx + i * m];
+    for (int i = n; i--;) res[i] = data[idx + i * m];
     return res;
   }
 
   void setCol(vec<n> vec, int idx) {
-    for (int i = n - 1; i--;) data[idx + i * m] = vec[i];
+    for (int i = n; i--;) data[idx + i * m] = vec[i];
   }
 
   matrix<n, m> transpose() {
@@ -109,6 +109,7 @@ template <int s>
 float operator*(const vec<s>& lhs, const vec<s>& rhs) {
   float ret = 0;
   for (int i = 0; i < s; i++) ret += lhs[i] * rhs[i];
+
   return ret;
 }
 
@@ -136,7 +137,7 @@ vec<n> embed(const vec<s>& v, const float& prefix = 0) {
 
 template <int r1, int c1, int c2>
 matrix<r1, c2> operator*(matrix<r1, c1> mat1, matrix<c1, c2> mat2) {
-  matrix<c1, c2> res;
+  matrix<r1, c2> res;
 
   for (int i = r1; i--;)
     for (int j = c2; j--;) res(i, j) = mat1.getRow(i) * mat2.getCol(j);
@@ -148,7 +149,7 @@ template <int r1, int c1>
 matrix<r1, 1> operator*(matrix<r1, c1> mat1, vec<c1> vec) {
   matrix<r1, 1> res = matrix<r1, 1>();
 
-  for (int i = 0; i < c1; i++) res(i, 0) = mat1.getRow(0) * vec;
+  for (int i = r1; i--;) res(i, 0) = mat1.getRow(i) * vec;
 
   return res;
 }
@@ -200,8 +201,9 @@ template <int r1, int c1, int c2>
 void backwardsGaussianMatrix(matrix<r1, c1>& U, matrix<c1, c2>& x,
                              matrix<c1, c2>& Z) {
   for (int i = 0; i < c2; i++)
-    for (int j = r1; j--;)
+    for (int j = r1; j--;) {
       x(j, i) = (Z(j, i) - U.getRow(j) * x.getCol(i)) / U(j, j);
+    }
 }
 
 template <int r1, int c1, int c2>
@@ -234,4 +236,23 @@ void solve(matrix<n, m>& A, matrix<n, m>& X, matrix<n, m>& C) {
   forwardGaussianMatrix(L, Z, C);
 
   backwardsGaussianMatrix(U, X, Z);
+}
+
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+// Output functions for matrices and vectors
+//
+//
+
+template <int n, int m>
+void printMath(matrix<n, m>& A) {
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < m; j++) std::cerr << A(i, j) << " ";
+    std::cerr << "\n";
+  }
+}
+
+template <int n, int m>
+void printMath(vec<n>& v) {
+  for (int i = 0; i < n; i++) std::cerr << v[i] << "\n";
 }
