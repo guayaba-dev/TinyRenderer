@@ -51,9 +51,9 @@ struct TexturingShader : public IShader {
                       embed<3, 4>(model->vert(model->face(face)[idVert]), 1.))
                          .getCol(0);
     varying_tri.setCol(glVertex, idVert);
-    ndc_tri.setCol(proj<4, 3>(glVertex / glVertex[2]), idVert);
+    ndc_tri.setCol(proj<4, 3>(glVertex / glVertex[3]), idVert);
     glVertex = (ViewPort * glVertex).getCol(0);
-    return proj<4, 3>(glVertex / glVertex[2]);
+    return proj<4, 3>(glVertex / glVertex[3]);
   }
 
   virtual bool fragment(Vec4f bar, TGAColor& color) override {
@@ -105,9 +105,9 @@ struct zBufferShader : public IShader {
                        embed<3, 4>(model->vert(model->face(face)[idVert]), 1.))
                           .getCol(0);
 
-    ndc_tri.setCol(gl_Vertex / gl_Vertex[2], idVert);
+    ndc_tri.setCol(gl_Vertex / gl_Vertex[3], idVert);
 
-    return proj<4, 3>(gl_Vertex / gl_Vertex[2]);
+    return proj<4, 3>(gl_Vertex / gl_Vertex[3]);
   }
 
   virtual bool fragment(Vec4f bar, TGAColor& color) override {
