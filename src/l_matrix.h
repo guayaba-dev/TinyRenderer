@@ -252,7 +252,7 @@ void printMath(matrix<n, m>& A) {
   }
 }
 
-template <int n, int m>
+template <int n>
 void printMath(vec<n>& v) {
   for (int i = 0; i < n; i++) std::cerr << v[i] << "\n";
 }

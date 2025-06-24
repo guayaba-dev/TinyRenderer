@@ -167,6 +167,7 @@ int main(int argc, char** argv) {
                    Vec2f(WIDTH, HEIGHT));
     }
 
+    /*
     shader.uniform_LMV = ViewPort * Projection * ModelView;
 
     lookat(center, eye, Vec3f(0., 1., 0.));
@@ -189,8 +190,9 @@ int main(int argc, char** argv) {
       drawTriangle(screen_coords, z_buffer, finalRender, shader,
                    Vec2f(WIDTH, HEIGHT));
     }
+    */
 
-    bufferToRender(renderer, finalRender);
+    bufferToRender(renderer, z_shadedBuffer);
   }
 
   SDL_SetRenderTarget(renderer, NULL);

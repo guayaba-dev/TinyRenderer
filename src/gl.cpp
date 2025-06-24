@@ -39,13 +39,12 @@ void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
     bboxmin[1] = std::max(0., std::min(bboxmin[1], points[i][1]));
 
     bboxmax[0] = std::min(clamp[0], std::max(bboxmax[0], points[i][0]));
-
     bboxmax[1] = std::min(clamp[1], std::max(bboxmax[1], points[i][1]));
   }
 
   Vec3f P;
-  for (P[1] = bboxmin[1]; P[1] < bboxmax[1]; P[1]++) {
-    for (P[0] = bboxmin[0]; P[0] < bboxmax[0]; P[0]++) {
+  for (P[1] = (int)bboxmin[1]; P[1] < bboxmax[1]; P[1]++) {
+    for (P[0] = (int)bboxmin[0]; P[0] < bboxmax[0]; P[0]++) {
       Vec4f barycentric = getBarycentric(points, P);
 
       if (barycentric[0] < 0. || barycentric[1] < 0. || barycentric[2] < 0.)
@@ -54,21 +53,19 @@ void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
       P[2] = 0;
 
       // z coords aproximation
-      for (int i = 0; i < 3; i++) {
-        P[2] = P[2] + points[i][2] * barycentric[i];
-      }
+      for (int i = 0; i < 3; i++) P[2] = P[2] + points[i][2] * barycentric[i];
 
-      if (P[2] > z_buffer[(int)(P[0] + P[1] * (int)windowDimensions[0])]) {
-        z_buffer[(int)(P[0] + P[1] * (int)windowDimensions[0])] = P[2];
+      P[2] = (int)P[2];
 
-        TGAColor shadedColor;
+      if (P[2] < z_buffer[int(P[0] + P[1] * windowDimensions[0])]) return;
 
-        if (shader.fragment(barycentric, shadedColor)) {
-          continue;
-        }
+      z_buffer[(int)(P[0] + P[1] * windowDimensions[0])] = P[2];
 
-        buffer->set((int)P[0], (int)P[1], shadedColor);
-      }
+      TGAColor shadedColor;
+
+      if (shader.fragment(barycentric, shadedColor)) continue;
+
+      buffer->set(P[0], P[1], shadedColor);
     }
   }
 }
