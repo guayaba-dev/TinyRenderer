@@ -53,13 +53,11 @@ void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
       P[2] = 0;
 
       // z coords aproximation
-      for (int i = 0; i < 3; i++) P[2] = P[2] + points[i][2] * barycentric[i];
+      for (int i = 0; i < 3; i++) P[2] = P[2] + (points[i][2] * barycentric[i]);
 
-      P[2] = (int)P[2];
+      if (P[2] < z_buffer[int(P[0] + P[1] * windowDimensions[0])]) continue;
 
-      if (P[2] < z_buffer[int(P[0] + P[1] * windowDimensions[0])]) return;
-
-      z_buffer[(int)(P[0] + P[1] * windowDimensions[0])] = P[2];
+      z_buffer[int(P[0] + P[1] * windowDimensions[0])] = P[2];
 
       TGAColor shadedColor;
 
@@ -99,11 +97,6 @@ void lookat(Vec3f center, Vec3f eye, Vec3f up) {
     Traslation(i, 3) = -center[i];
   }
 
-  std::cerr << "------------\n Minv\n";
-  printMath(Minv);
-  std::cerr << "------------\n Traslation\n";
-  printMath(Traslation);
-
   ModelView = Minv * Traslation;
   std::cerr << "------------\n ModelView\n";
   printMath(ModelView);
@@ -121,9 +114,16 @@ void viewport(int w, int h, int x, int y) {
   result(2, 2) = 255.f / 2.f;
 
   ViewPort = result;
+
+  std::cerr << "------------\n ViewPort\n";
+  printMath(ViewPort);
 }
 
 void projection(float coeff) {
   Projection = matrix<4, 4>::identity();
   Projection(3, 2) = coeff;
+
+  std::cerr << "------------\n Projection\n";
+  printMath(Projection);
+
 }  // coeff = -1/c

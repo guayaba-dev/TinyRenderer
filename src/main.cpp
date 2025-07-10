@@ -17,12 +17,13 @@ float* z_buffer = NULL;
 float* z_ShadowBuffer = NULL;
 Vec3f lightDirection = Vec3f(1., 1., 1);  // light
 Vec3f lighteye(1, 1, 1);
-Vec3f eye(0, 0, 5);
+Vec3f eye(0, 0, 3);
 Vec3f center(0, 0, 0);
 
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
 SDL_Texture* canvas = nullptr;
+
 struct TexturingShader : public IShader {
   matrix<2, 3> varying_uv = matrix<2, 3>();            // uv coords
   matrix<4, 4> varying_tri = matrix<4, 4>();           // triangle ModelView
@@ -91,7 +92,7 @@ struct TexturingShader : public IShader {
 
     float lightIntensity = std::max((normalMapped * lightDirection), 0.f);
 
-    color = model->getDiffuse(uvBar) * lightIntensity * shadow;
+    color = model->getDiffuse(uvBar) * shadow;
 
     return false;
   }
@@ -167,7 +168,6 @@ int main(int argc, char** argv) {
                    Vec2f(WIDTH, HEIGHT));
     }
 
-    /*
     shader.uniform_LMV = ViewPort * Projection * ModelView;
 
     lookat(center, eye, Vec3f(0., 1., 0.));
@@ -190,9 +190,8 @@ int main(int argc, char** argv) {
       drawTriangle(screen_coords, z_buffer, finalRender, shader,
                    Vec2f(WIDTH, HEIGHT));
     }
-    */
 
-    bufferToRender(renderer, z_shadedBuffer);
+    bufferToRender(renderer, finalRender);
   }
 
   SDL_SetRenderTarget(renderer, NULL);
