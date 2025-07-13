@@ -15,8 +15,8 @@ const int DEPTH = 255;
 Model* model = NULL;
 float* z_buffer = NULL;
 float* z_ShadowBuffer = NULL;
-Vec3f lightDirection = Vec3f(1., 1., 1);  // light
-Vec3f lighteye(1, 1, 1);
+Vec3f lightDirection = Vec3f(1., 1., -1);  // light
+Vec3f lighteye(1, 1, -1);
 Vec3f eye(0, 0, 3);
 Vec3f center(0, 0, 0);
 
@@ -33,7 +33,6 @@ struct TexturingShader : public IShader {
   matrix<4, 4> uniform_LMV = matrix<4, 4>();   // Matrix to lightPos
   matrix<4, 4> uniform_MV = matrix<4, 4>();    // Model view matrix
   matrix<4, 4> uniform_MVIT = matrix<4, 4>();  // ModelView inverse traspose
-  TGAImage uniform_shadowMap;
 
   virtual Vec3f vertex(int face, int idVert) override {
     varying_uv.setCol(model->textCoord(model->texture(face)[idVert]), idVert);
@@ -42,16 +41,18 @@ struct TexturingShader : public IShader {
         (uniform_MVIT *
          embed<3, 4>(model->vertexNomal(model->vertexNomalsIds(face)[idVert])))
             .getCol(0);
-
     varying_nrm.setCol(proj<4, 3>(nrm), idVert);
+
     Vec4f shadowVerts =
         (uniform_LMV * embed<3, 4>(model->vert(model->face(face)[idVert]), 1.))
             .getCol(0);
     varying_shadow_depth.setCol((shadowVerts / shadowVerts[2]), idVert);
+
     Vec4f glVertex = (Projection * ModelView *
                       embed<3, 4>(model->vert(model->face(face)[idVert]), 1.))
                          .getCol(0);
     varying_tri.setCol(glVertex, idVert);
+
     ndc_tri.setCol(proj<4, 3>(glVertex / glVertex[3]), idVert);
     glVertex = (ViewPort * glVertex).getCol(0);
     return proj<4, 3>(glVertex / glVertex[3]);
@@ -62,12 +63,10 @@ struct TexturingShader : public IShader {
     Vec2f uvBar = (varying_uv * proj<4, 3>(bar)).getCol(0);
     Vec4f shadowMapBar = (varying_shadow_depth * bar).getCol(0);
 
-    int idx = int(shadowMapBar[0]) +
-              int(shadowMapBar[1]) * WIDTH;  // index in the shadowbuffer array
+    int idx = shadowMapBar[0] +
+              shadowMapBar[1] * WIDTH;  // index in the shadowbuffer array
 
-    uniform_shadowMap.get(shadowMapBar[0], shadowMapBar[1]);
-
-    float shadow = 0.3 + 0.7 * (z_ShadowBuffer[idx] < shadowMapBar[2] + 47.61);
+    float shadow = 0.3 + 0.7 * (z_ShadowBuffer[idx] < shadowMapBar[2]);
 
     matrix<3, 3> A = matrix<3, 3>();
 
@@ -87,6 +86,8 @@ struct TexturingShader : public IShader {
     matrix<3, 3> BTN = matrix<3, 3>();
 
     solve(A, BTN, B);
+
+    BTN.setCol(normalBar, 2);
 
     Vec3f normalMapped = (BTN * normalize(model->getNormal(uvBar))).getCol(0);
 
