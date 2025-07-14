@@ -15,8 +15,8 @@ const int DEPTH = 255;
 Model* model = NULL;
 float* z_buffer = NULL;
 float* z_ShadowBuffer = NULL;
-Vec3f lightDirection = Vec3f(1., 1., -1);  // light
-Vec3f lighteye(1, 1, -1);
+Vec3f lightDirection = Vec3f(1., 1., 1);  // light
+Vec3f lighteye(1, 1, 1);
 Vec3f eye(0, 0, 3);
 Vec3f center(0, 0, 0);
 
@@ -46,7 +46,7 @@ struct TexturingShader : public IShader {
     Vec4f shadowVerts =
         (uniform_LMV * embed<3, 4>(model->vert(model->face(face)[idVert]), 1.))
             .getCol(0);
-    varying_shadow_depth.setCol((shadowVerts / shadowVerts[2]), idVert);
+    varying_shadow_depth.setCol((shadowVerts / shadowVerts[3]), idVert);
 
     Vec4f glVertex = (Projection * ModelView *
                       embed<3, 4>(model->vert(model->face(face)[idVert]), 1.))
@@ -63,10 +63,10 @@ struct TexturingShader : public IShader {
     Vec2f uvBar = (varying_uv * proj<4, 3>(bar)).getCol(0);
     Vec4f shadowMapBar = (varying_shadow_depth * bar).getCol(0);
 
-    int idx = shadowMapBar[0] +
-              shadowMapBar[1] * WIDTH;  // index in the shadowbuffer array
+    int idx = (int)shadowMapBar[0] +
+              (int)shadowMapBar[1] * WIDTH;  // index in the shadowbuffer array
 
-    float shadow = 0.3 + 0.7 * (z_ShadowBuffer[idx] < shadowMapBar[2]);
+    float shadow = 0.3 + 0.7 * (z_ShadowBuffer[idx] < shadowMapBar[2] + 43.24);
 
     matrix<3, 3> A = matrix<3, 3>();
 
@@ -93,7 +93,7 @@ struct TexturingShader : public IShader {
 
     float lightIntensity = std::max((normalMapped * lightDirection), 0.f);
 
-    color = model->getDiffuse(uvBar) * shadow;
+    color = model->getDiffuse(uvBar) * shadow * lightIntensity;
 
     return false;
   }
