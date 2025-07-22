@@ -193,6 +193,8 @@ int main(int argc, char** argv) {
     }
 
     bufferToRender(renderer, finalRender);
+    delete finalRender;
+    delete z_shadedBuffer;
   }
 
   SDL_SetRenderTarget(renderer, NULL);
@@ -225,5 +227,6 @@ int main(int argc, char** argv) {
 
   delete model;
   delete[] z_buffer;
+  delete[] z_ShadowBuffer;
   return 0;
 }
