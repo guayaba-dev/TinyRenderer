@@ -11,4 +11,4 @@ Window createWindow();
 
 void deleteWindow(Window& window);
 
-void presentWindow();
+void presentWindow(Window& window);
