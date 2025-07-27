@@ -1,11 +1,11 @@
-#include <SDL2/SDL_pixels.h>
-#include <SDL2/SDL_render.h>
+
 
 #include <iostream>
 
 #include "gl.h"
 #include "l_matrix.h"
 #include "model.h"
+#include "s_WindowManager.h"
 #include "tgaimage.h"
 
 const int HEIGHT = 700;
@@ -19,10 +19,6 @@ Vec3f lightDirection = Vec3f(1., 1., 1);  // light
 Vec3f lighteye(1, 1, 1);
 Vec3f eye(0, 0, 3);
 Vec3f center(0, 0, 0);
-
-SDL_Window* window = nullptr;
-SDL_Renderer* renderer = nullptr;
-SDL_Texture* canvas = nullptr;
 
 struct TexturingShader : public IShader {
   matrix<2, 3> varying_uv = matrix<2, 3>();            // uv coords
@@ -141,15 +137,7 @@ int main(int argc, char** argv) {
     z_buffer[i] = std::numeric_limits<int>::min();
   }
 
-  {  // window set up
-    SDL_Init(SDL_INIT_VIDEO);
-    SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer);
-    canvas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
-                               SDL_TEXTUREACCESS_TARGET, WIDTH, HEIGHT);
-    SDL_SetRenderTarget(renderer, canvas);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-  }
+  Window mainWindow = createWindow();
 
   {  // draw model Logic
     lookat(center, lighteye, Vec3f(0., 1., 0.));
@@ -192,12 +180,12 @@ int main(int argc, char** argv) {
                    Vec2f(WIDTH, HEIGHT));
     }
 
-    bufferToRender(renderer, finalRender);
+    bufferToRender(mainWindow.renderer, finalRender);
     delete finalRender;
     delete z_shadedBuffer;
   }
 
-  SDL_SetRenderTarget(renderer, NULL);
+  SDL_SetRenderTarget(mainWindow.renderer, NULL);
 
   bool running = true;
   SDL_Event event;
@@ -214,16 +202,10 @@ int main(int argc, char** argv) {
       running = false;
     }
 
-    SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, canvas, NULL, NULL);
-    SDL_RenderPresent(renderer);
-    SDL_Delay(16);
+    presentWindow(mainWindow);
   }
 
-  SDL_DestroyTexture(canvas);
-  SDL_DestroyRenderer(renderer);
-  SDL_DestroyWindow(window);
-  SDL_Quit();
+  deleteWindow(mainWindow);
 
   delete model;
   delete[] z_buffer;
