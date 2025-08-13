@@ -7,21 +7,22 @@
 #include "l_matrix.h"
 #include "tgaimage.h"
 
+Vec2f windowSize;
+
 IShader::~IShader() {}
 
 Vec4f getBarycentric(Vec3f vertex[], Vec3f point) {
+  // Obteins the x and y vectors respectively for bar calculus
   Vec3f x_vertex =
-      Vec3f(vertex[1][0] - vertex[0][0], vertex[2][0] - vertex[0][0],
-            vertex[0][0] - (int)point[0]);
+      Vec3f(vertex[1][vX] - vertex[0][vX], vertex[2][vX] - vertex[0][vX],
+            vertex[0][vX] - (int)point[vX]);
   Vec3f y_vertex =
-      Vec3f(vertex[1][1] - vertex[0][1], vertex[2][1] - vertex[0][1],
-            vertex[0][1] - (int)point[1]);
+      Vec3f(vertex[1][vY] - vertex[0][vY], vertex[2][vY] - vertex[0][vY],
+            vertex[0][vY] - (int)point[vY]);
 
   Vec3f u = crossProduct(x_vertex, y_vertex);
-
   if (abs(u[2]) < 1) return Vec4f(-1, 1, 1, 0);
-
-  return Vec4f(1 - (u[0] + u[1]) / u[2], u[0] / u[2], u[1] / u[2], 0.f);
+  return Vec4f(1 - (u[vX] + u[vY]) / u[vZ], u[vX] / u[vZ], u[vY] / u[vZ], 0.f);
 }
 
 void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
@@ -31,26 +32,26 @@ void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
   Vec2f clamp(windowDimensions);
 
   for (int i = 0; i < 3; i++) {
-    bboxmin[0] = std::max(0., std::min(bboxmin[0], points[i][0]));
-    bboxmin[1] = std::max(0., std::min(bboxmin[1], points[i][1]));
+    bboxmin[vX] = std::max(0., std::min(bboxmin[vX], points[i][vX]));
+    bboxmin[vY] = std::max(0., std::min(bboxmin[vY], points[i][vY]));
 
-    bboxmax[0] = std::min(clamp[0], std::max(bboxmax[0], points[i][0]));
-    bboxmax[1] = std::min(clamp[1], std::max(bboxmax[1], points[i][1]));
+    bboxmax[vX] = std::min(clamp[vX], std::max(bboxmax[vX], points[i][vX]));
+    bboxmax[vY] = std::min(clamp[vY], std::max(bboxmax[vY], points[i][vX]));
   }
 
   Vec3f P;
-  for (P[1] = (int)bboxmin[1]; P[1] < bboxmax[1]; P[1]++) {
-    for (P[0] = (int)bboxmin[0]; P[0] < bboxmax[0]; P[0]++) {
+  for (P[vY] = (int)bboxmin[1]; P[vY] < bboxmax[vY]; P[vY]++) {
+    for (P[vX] = (int)bboxmin[0]; P[0] < bboxmax[vY]; P[vX]++) {
       Vec4f barycentric = getBarycentric(points, P);
 
       if (barycentric[0] < 0. || barycentric[1] < 0. || barycentric[2] < 0.)
         continue;  // out of triangleBounds
 
-      P[2] = 0;
-
       // z coords aproximation
+      P[vZ] = 0;
       for (int i = 0; i < 3; i++) P[2] = P[2] + (points[i][2] * barycentric[i]);
 
+      // buffer check
       if (P[2] < z_buffer[int(P[0] + P[1] * windowDimensions[0])]) continue;
 
       z_buffer[int(P[0] + P[1] * windowDimensions[0])] = P[2];
