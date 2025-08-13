@@ -1,5 +1,3 @@
-
-
 #include "tgaimage.h"
 
 #include <math.h>

@@ -10,10 +10,11 @@ Vec3f zBufferShader::vertex(Vec3f vert) {
 }
 
 bool zBufferShader::fragment(Vec4f bar, TGAColor& color) {
-  float intensity = (ndc_tri * bar).getCol(0)[2] /
+  float intensity = (ndc_tri * proj<4, 3>(bar)).getCol(0)[2] /
                     DEPTH;  // interpolate intensity for the current pixel
 
   color = TGAColor(255, 255, 255) * intensity;
+
   return false;
 }
 

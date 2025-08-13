@@ -44,6 +44,11 @@ int main(int argc, char** argv) {
     viewport(WIDTH, HEIGHT, 0, 0);
     projection(0);
 
+    // temp
+    shader2.Projection = Projection;
+    shader2.ModelView = ModelView;
+    shader2.ViewPort = ViewPort;
+
     TGAImage* z_shadedBuffer = new TGAImage(WIDTH, HEIGHT, TGAImage::RGBA);
 
     for (int i = 0; i < model->nfaces(); i++) {
@@ -52,6 +57,7 @@ int main(int argc, char** argv) {
 
       for (int j = 0; j < 3; j++) {
         screen_coords[j] = shader2.vertex(model->vert(faceID[j]));
+        shader2.ndc_tri.setCol(screen_coords[j], j);
       }
 
       drawTriangle(screen_coords, z_ShadowBuffer, z_shadedBuffer, shader2,

@@ -14,7 +14,7 @@ struct IShader {
 
 struct zBufferShader : public IShader {
   Model* model = NULL;
-  matrix<4, 4> ndc_tri = matrix<4, 4>();
+  matrix<3, 3> ndc_tri = matrix<3, 3>();
   matrix<4, 4> ViewPort = matrix<4, 4>();
   matrix<4, 4> Projection = matrix<4, 4>();
   matrix<4, 4> ModelView = matrix<4, 4>();
