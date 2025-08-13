@@ -40,14 +40,11 @@ int main(int argc, char** argv) {
   Window mainWindow = createWindow();
 
   {  // draw model Logic
-    lookat(center, lighteye, Vec3f(0., 1., 0.));
-    viewport(WIDTH, HEIGHT, 0, 0);
-    projection(0);
 
     // temp
-    shader2.Projection = Projection;
-    shader2.ModelView = ModelView;
-    shader2.ViewPort = ViewPort;
+    shader2.Projection = projection(0);
+    shader2.ModelView = lookat(center, lighteye, Vec3f(0., 1., 0.));
+    shader2.ViewPort = viewport(WIDTH, HEIGHT, 0, 0);
 
     TGAImage* z_shadedBuffer = new TGAImage(WIDTH, HEIGHT, TGAImage::RGBA);
 

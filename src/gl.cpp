@@ -7,10 +7,6 @@
 #include "l_matrix.h"
 #include "tgaimage.h"
 
-matrix<4, 4> ModelView;
-matrix<4, 4> ViewPort;
-matrix<4, 4> Projection;
-
 IShader::~IShader() {}
 
 Vec4f getBarycentric(Vec3f vertex[], Vec3f point) {
@@ -82,13 +78,14 @@ void bufferToRender(SDL_Renderer* renderer, TGAImage* buffer) {
   }
 }
 
-void lookat(Vec3f center, Vec3f eye, Vec3f up) {
+matrix<4, 4> lookat(Vec3f center, Vec3f eye, Vec3f up) {
   Vec3f z = normalize(eye - center);
   Vec3f x = normalize(crossProduct(z, up));
   Vec3f y = normalize(crossProduct(x, z));
 
   matrix<4, 4> Minv = matrix<4, 4>::identity();
   matrix<4, 4> Traslation = matrix<4, 4>::identity();
+  matrix<4, 4> result;
 
   for (int i = 0; i < 3; i++) {
     Minv(0, i) = x[i];
@@ -97,12 +94,12 @@ void lookat(Vec3f center, Vec3f eye, Vec3f up) {
     Traslation(i, 3) = -center[i];
   }
 
-  ModelView = Minv * Traslation;
+  result = Minv * Traslation;
   std::cerr << "------------\n ModelView\n";
-  printMath(ModelView);
+  return result;
 }
 
-void viewport(int w, int h, int x, int y) {
+matrix<4, 4> viewport(int w, int h, int x, int y) {
   matrix<4, 4> result = matrix<4, 4>::identity();
 
   result(0, 3) = x + w / 2.f;
@@ -113,17 +110,18 @@ void viewport(int w, int h, int x, int y) {
   result(1, 1) = h / 2.f;
   result(2, 2) = 255.f / 2.f;
 
-  ViewPort = result;
-
   std::cerr << "------------\n ViewPort\n";
-  printMath(ViewPort);
+  printMath(result);
+  return result;
 }
 
-void projection(float coeff) {
-  Projection = matrix<4, 4>::identity();
-  Projection(3, 2) = coeff;
+matrix<4, 4> projection(float coeff) {
+  matrix<4, 4> result;
+  result(3, 2) = coeff;
+  result = matrix<4, 4>::identity();
 
   std::cerr << "------------\n Projection\n";
-  printMath(Projection);
+  printMath(result);
 
+  return result;
 }  // coeff = -1/c
