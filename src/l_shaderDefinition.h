@@ -19,7 +19,10 @@ struct zBufferShader : public IShader {
   matrix<4, 4> Projection = matrix<4, 4>();
   matrix<4, 4> ModelView = matrix<4, 4>();
 
-  zBufferShader() = default;
+  zBufferShader(matrix<4, 4> model, matrix<4, 4> viewPort,
+                matrix<4, 4> projection)
+      : ModelView(model), ViewPort(viewPort), Projection(projection) {};
+
   Vec3f vertex(Vec3f vert) override;  // Vertex processor
 
   bool fragment(Vec4f bar,

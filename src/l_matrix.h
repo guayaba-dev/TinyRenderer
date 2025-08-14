@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <vector>
 
-const int vX = 0, vY = 1, vZ = 2;
+const int vX = 0, vY = 1, vZ = 2, vW = 3;
 #define MAX_ALLOC 4
 
 template <int s>

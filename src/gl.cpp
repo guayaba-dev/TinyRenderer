@@ -7,8 +7,6 @@
 #include "l_matrix.h"
 #include "tgaimage.h"
 
-Vec2f windowSize;
-
 IShader::~IShader() {}
 
 Vec4f getBarycentric(Vec3f vertex[], Vec3f point) {
@@ -21,7 +19,9 @@ Vec4f getBarycentric(Vec3f vertex[], Vec3f point) {
             vertex[0][vY] - (int)point[vY]);
 
   Vec3f u = crossProduct(x_vertex, y_vertex);
-  if (abs(u[2]) < 1) return Vec4f(-1, 1, 1, 0);
+
+  if (abs(u[vZ]) < 1) return Vec4f(-1, 1, 1, 0);
+
   return Vec4f(1 - (u[vX] + u[vY]) / u[vZ], u[vX] / u[vZ], u[vY] / u[vZ], 0.f);
 }
 
@@ -40,27 +40,28 @@ void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
   }
 
   Vec3f P;
-  for (P[vY] = (int)bboxmin[1]; P[vY] < bboxmax[vY]; P[vY]++) {
-    for (P[vX] = (int)bboxmin[0]; P[0] < bboxmax[vY]; P[vX]++) {
+  for (P[vY] = (int)bboxmin[vY]; P[vY] < bboxmax[vY]; P[vY]++) {
+    for (P[vX] = (int)bboxmin[vX]; P[vX] < bboxmax[vY]; P[vX]++) {
       Vec4f barycentric = getBarycentric(points, P);
 
-      if (barycentric[0] < 0. || barycentric[1] < 0. || barycentric[2] < 0.)
+      if (barycentric[vX] < 0. || barycentric[vY] < 0. || barycentric[vZ] < 0.)
         continue;  // out of triangleBounds
 
       // z coords aproximation
       P[vZ] = 0;
-      for (int i = 0; i < 3; i++) P[2] = P[2] + (points[i][2] * barycentric[i]);
+      for (int i = 0; i < 3; i++)
+        P[vZ] = P[vZ] + (points[i][vZ] * barycentric[i]);
 
       // buffer check
-      if (P[2] < z_buffer[int(P[0] + P[1] * windowDimensions[0])]) continue;
+      if (P[vZ] < z_buffer[int(P[vX] + P[vY] * windowDimensions[vX])]) continue;
 
-      z_buffer[int(P[0] + P[1] * windowDimensions[0])] = P[2];
+      z_buffer[int(P[vX] + P[vY] * windowDimensions[vX])] = P[vZ];
 
       TGAColor shadedColor;
 
       if (shader.fragment(barycentric, shadedColor)) continue;
 
-      buffer->set(P[0], P[1], shadedColor);
+      buffer->set(P[vX], P[vY], shadedColor);
     }
   }
 }
@@ -68,15 +69,14 @@ void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
 void bufferToRender(SDL_Renderer* renderer, TGAImage* buffer) {
   buffer->flip_vertically();
 
-  for (int j = 0; j < buffer->get_height(); j++) {
+  for (int j = 0; j < buffer->get_height(); j++)
     for (int i = 0; i < buffer->get_width(); i++) {
       TGAColor pixelColor = buffer->get(i, j);
 
-      SDL_SetRenderDrawColor(renderer, pixelColor[2], pixelColor[1],
-                             pixelColor[0], 255);
+      SDL_SetRenderDrawColor(renderer, pixelColor[vZ], pixelColor[vY],
+                             pixelColor[vX], 255);
       SDL_RenderDrawPoint(renderer, i, j);
     }
-  }
 }
 
 matrix<4, 4> lookat(Vec3f center, Vec3f eye, Vec3f up) {

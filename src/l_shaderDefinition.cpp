@@ -6,7 +6,7 @@ Vec3f zBufferShader::vertex(Vec3f vert) {
   Vec4f gl_Vertex =
       (ViewPort * Projection * ModelView * embed<3, 4>(vert, 1.)).getCol(0);
 
-  return proj<4, 3>(gl_Vertex / gl_Vertex[3]);
+  return proj<4, 3>(gl_Vertex / gl_Vertex[vW]);
 }
 
 bool zBufferShader::fragment(Vec4f bar, TGAColor& color) {

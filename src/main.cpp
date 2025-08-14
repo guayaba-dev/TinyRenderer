@@ -13,38 +13,26 @@ const int DEPTH = 255;
 Model* model = NULL;
 float* z_buffer = NULL;
 float* z_ShadowBuffer = NULL;
-Vec3f lightDirection = Vec3f(1., 1., 1);  // light
 Vec3f lighteye(1, 1, 1);
 Vec3f eye(0, 0, 3);
 Vec3f center(0, 0, 0);
 
-zBufferShader shader2 = zBufferShader();
+zBufferShader shader2 =
+    zBufferShader(lookat(center, lighteye, Vec3f(0, 1, 0)),
+                  viewport(WIDTH, HEIGHT, 0, 0), projection(0));
 
 int main(int argc, char** argv) {
-  if (2 == argc) {
+  if (2 == argc)
     model = new Model(argv[1]);
-  } else {
+  else
     model = new Model("obj/african_head.obj");
-  }
-
-  z_buffer = new float[WIDTH * HEIGHT];
-  for (int i = 0; i < WIDTH * HEIGHT; i++) {
-    z_buffer[i] = std::numeric_limits<int>::min();
-  }
-
-  z_ShadowBuffer = new float[WIDTH * HEIGHT];
-  for (int i = 0; i < WIDTH * HEIGHT; i++) {
-    z_buffer[i] = std::numeric_limits<int>::min();
-  }
 
   Window mainWindow = createWindow();
 
-  {  // draw model Logic
-
-    // temp
-    shader2.Projection = projection(0);
-    shader2.ModelView = lookat(center, lighteye, Vec3f(0., 1., 0.));
-    shader2.ViewPort = viewport(WIDTH, HEIGHT, 0, 0);
+  {
+    z_ShadowBuffer = new float[WIDTH * HEIGHT];
+    for (int i = 0; i < WIDTH * HEIGHT; i++)
+      z_buffer[i] = std::numeric_limits<int>::min();
 
     TGAImage* z_shadedBuffer = new TGAImage(WIDTH, HEIGHT, TGAImage::RGBA);
 
@@ -72,9 +60,7 @@ int main(int argc, char** argv) {
 
   while (running) {
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT) {
-        running = false;
-      }
+      if (event.type == SDL_QUIT) running = false;
 
       if (event.type != SDL_KEYDOWN) continue;
       if (event.key.keysym.sym != SDLK_ESCAPE) continue;

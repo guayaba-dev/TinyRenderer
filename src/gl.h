@@ -14,10 +14,3 @@ void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* renderer,
                   IShader& shader, Vec2f windowDimensions);
 
 void bufferToRender(SDL_Renderer* renderer, TGAImage* buffer);
-
-/*
-void drawScene() {};  // TEMP void def
-
-void drawModel(Model* model, IShader& material, Vec3f transform = Vec3f()) {
-};  // TEMP void def
-*/
