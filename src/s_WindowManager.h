@@ -5,6 +5,7 @@ struct Window {
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
   SDL_Texture* canvas = nullptr;
+  int size[2];
 };
 
 Window createWindow();

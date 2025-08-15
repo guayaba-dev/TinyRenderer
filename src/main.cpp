@@ -1,18 +1,16 @@
-#include <vector>
+#include <iostream>
 
 #include "gl.h"
+#include "gl_wrapper.hpp"
 #include "l_matrix.h"
 #include "model.h"
 #include "s_WindowManager.h"
-#include "tgaimage.h"
 
 const int HEIGHT = 700;
 const int WIDTH = 700;
 const int DEPTH = 255;
 
 Model* model = NULL;
-float* z_buffer = NULL;
-float* z_ShadowBuffer = NULL;
 Vec3f lighteye(1, 1, 1);
 Vec3f eye(0, 0, 3);
 Vec3f center(0, 0, 0);
@@ -28,30 +26,9 @@ int main(int argc, char** argv) {
     model = new Model("obj/african_head.obj");
 
   Window mainWindow = createWindow();
+  setWindow(mainWindow);
 
-  {
-    z_ShadowBuffer = new float[WIDTH * HEIGHT];
-    for (int i = 0; i < WIDTH * HEIGHT; i++)
-      z_buffer[i] = std::numeric_limits<int>::min();
-
-    TGAImage* z_shadedBuffer = new TGAImage(WIDTH, HEIGHT, TGAImage::RGBA);
-
-    for (int i = 0; i < model->nfaces(); i++) {
-      std::vector<int> faceID = model->face(i);
-      Vec3f screen_coords[3];
-
-      for (int j = 0; j < 3; j++) {
-        screen_coords[j] = shader2.vertex(model->vert(faceID[j]));
-        shader2.ndc_tri.setCol(screen_coords[j], j);
-      }
-
-      drawTriangle(screen_coords, z_ShadowBuffer, z_shadedBuffer, shader2,
-                   Vec2f(WIDTH, HEIGHT));
-    }
-
-    bufferToRender(mainWindow.renderer, z_shadedBuffer);
-    delete z_shadedBuffer;
-  }
+  drawModel(model);
 
   SDL_SetRenderTarget(mainWindow.renderer, NULL);
 
@@ -74,7 +51,5 @@ int main(int argc, char** argv) {
   deleteWindow(mainWindow);
 
   delete model;
-  delete[] z_buffer;
-  delete[] z_ShadowBuffer;
   return 0;
 }

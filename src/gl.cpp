@@ -2,6 +2,7 @@
 
 #include <SDL2/SDL_render.h>
 
+#include <cstdio>
 #include <iostream>
 
 #include "l_matrix.h"
@@ -44,8 +45,11 @@ void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
     for (P[vX] = (int)bboxmin[vX]; P[vX] < bboxmax[vY]; P[vX]++) {
       Vec4f barycentric = getBarycentric(points, P);
 
-      if (barycentric[vX] < 0. || barycentric[vY] < 0. || barycentric[vZ] < 0.)
+      if (barycentric[vX] < 0. || barycentric[vY] < 0. ||
+          barycentric[vZ] < 0.) {
+        std::cerr << "DEFORMED TRIANGLE\n";
         continue;  // out of triangleBounds
+      }
 
       // z coords aproximation
       P[vZ] = 0;
