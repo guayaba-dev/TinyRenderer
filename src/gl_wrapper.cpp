@@ -1,7 +1,5 @@
 #include "gl_wrapper.hpp"
 
-#include <iostream>
-
 #include "gl.h"
 #include "l_matrix.h"
 #include "l_shaderDefinition.h"

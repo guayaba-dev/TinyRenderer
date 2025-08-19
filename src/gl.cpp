@@ -8,6 +8,8 @@
 #include "l_matrix.h"
 #include "tgaimage.h"
 
+const TGAColor ERR_COLOR = TGAColor(82, 0, 255);  //"#e30052"
+
 IShader::~IShader() {}
 
 Vec4f getBarycentric(Vec3f vertex[], Vec3f point) {
@@ -37,19 +39,16 @@ void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
     bboxmin[vY] = std::max(0., std::min(bboxmin[vY], points[i][vY]));
 
     bboxmax[vX] = std::min(clamp[vX], std::max(bboxmax[vX], points[i][vX]));
-    bboxmax[vY] = std::min(clamp[vY], std::max(bboxmax[vY], points[i][vX]));
+    bboxmax[vY] = std::min(clamp[vY], std::max(bboxmax[vY], points[i][vY]));
   }
 
   Vec3f P;
   for (P[vY] = (int)bboxmin[vY]; P[vY] < bboxmax[vY]; P[vY]++) {
-    for (P[vX] = (int)bboxmin[vX]; P[vX] < bboxmax[vY]; P[vX]++) {
+    for (P[vX] = (int)bboxmin[vX]; P[vX] < bboxmax[vX]; P[vX]++) {
       Vec4f barycentric = getBarycentric(points, P);
 
-      if (barycentric[vX] < 0. || barycentric[vY] < 0. ||
-          barycentric[vZ] < 0.) {
-        std::cerr << "DEFORMED TRIANGLE\n";
+      if (barycentric[vX] < 0. || barycentric[vY] < 0. || barycentric[vZ] < 0.)
         continue;  // out of triangleBounds
-      }
 
       // z coords aproximation
       P[vZ] = 0;

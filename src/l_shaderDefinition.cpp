@@ -1,7 +1,5 @@
 #include "l_shaderDefinition.h"
 
-#include <iostream>
-
 #define DEPTH 255
 
 Vec3f zBufferShader::vertex(Vec3f vert) {
