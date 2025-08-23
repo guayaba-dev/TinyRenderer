@@ -18,15 +18,15 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_link_options("${SANITAZER_FLAGS}")
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Realize")
-  set(REALIZE_FLAGS
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  set(RELEASE_FLAGS
      -O3
      -DNDEBUG
      -flto
   )
 
-  add_compile_options("${REALIZE_FLAGS}")
-  add_link_options("${REALIZE_FLAGS}")
+  add_compile_options("${RELEASE_FLAGS}")
+  add_link_options("${RELEASE_FLAGS}")
 endif()
 
 
