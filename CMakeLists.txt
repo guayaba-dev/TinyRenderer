@@ -18,6 +18,19 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_link_options("${SANITAZER_FLAGS}")
 endif()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Realize")
+  set(REALIZE_FLAGS
+     -O3
+     -DNDEBUG
+     -flto
+  )
+
+  add_compile_options("${REALIZE_FLAGS}")
+  add_link_options("${REALIZE_FLAGS}")
+endif()
+
+
+
 #SDL package
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
