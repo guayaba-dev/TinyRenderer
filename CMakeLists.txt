@@ -1,8 +1,18 @@
 cmake_minimum_required(VERSION 3.10)
-
-project(TinyRenderer)
-
+project(TinyRenderer) 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+include(FetchContent)
+
+FetchContent_Declare(
+  entt
+  GIT_REPOSITORY https://github.com/skypjack/entt.git
+  GIT_TAG v3.15.0
+)
+
+FetchContent_MakeAvailable(entt)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(SANITAZER_FLAGS
@@ -33,7 +43,6 @@ endif()
 
 #SDL package
 find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIRS})
 
 #fuentes de codigo
 file(GLOB SRC_FILES src/*cpp)
@@ -41,8 +50,20 @@ list(REMOVE_ITEM SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
 add_library(TinyRendererLib ${SRC_FILES})
 
+target_include_directories(TinyRendererLib PRIVATE ${SDL2_INCLUDE_DIRS} ${entt_SOURCE_DIR}/src)
+target_link_libraries(TinyRendererLib PRIVATE ${SDL2_LIBRARIES})
+
 add_executable(${PROJECT_NAME} src/main.cpp)
-target_link_libraries(${PROJECT_NAME} TinyRendererLib ${SDL2_LIBRARIES})
+
+# Linkear el ejecutable con TinyRendererLib y EnTT.
+# EnTT es header-only, pero usamos su objetivo importado para manejar dependencias.
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    TinyRendererLib 
+    EnTT::EnTT  # Usar el objetivo importado de EnTT :cite[3]:cite[6]
+  )
+
+
+
 
 file(GLOB TEST_FILES tests/*cpp)
 add_executable(${PROJECT_NAME}_tests ${TEST_FILES})
