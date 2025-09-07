@@ -1,4 +1,4 @@
-#include "../build/_deps/entt-src/src/entt/entt.hpp"
+#include "../.dependencies/entt/entt.hpp"
 #include "gl.h"
 #include "gl_wrapper.hpp"
 #include "model.h"

@@ -4,16 +4,6 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(FetchContent)
-
-FetchContent_Declare(
-  entt
-  GIT_REPOSITORY https://github.com/skypjack/entt.git
-  GIT_TAG v3.15.0
-)
-
-FetchContent_MakeAvailable(entt)
-
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(SANITAZER_FLAGS
      -fno-omit-frame-pointer
@@ -50,19 +40,22 @@ list(REMOVE_ITEM SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
 add_library(TinyRendererLib ${SRC_FILES})
 
-target_include_directories(TinyRendererLib PRIVATE ${SDL2_INCLUDE_DIRS} ${entt_SOURCE_DIR}/src)
+target_include_directories(
+  TinyRendererLib PRIVATE 
+  ${SDL2_INCLUDE_DIRS} 
+  ${CMAKE_CURRENT_SOURCE_DIR}.dependencies/
+)
+
 target_link_libraries(TinyRendererLib PRIVATE ${SDL2_LIBRARIES})
 
 add_executable(${PROJECT_NAME} src/main.cpp)
 
 # Linkear el ejecutable con TinyRendererLib y EnTT.
 # EnTT es header-only, pero usamos su objetivo importado para manejar dependencias.
-target_link_libraries(${PROJECT_NAME} PRIVATE 
-    TinyRendererLib 
-    EnTT::EnTT  # Usar el objetivo importado de EnTT :cite[3]:cite[6]
+target_link_libraries(
+  ${PROJECT_NAME} PRIVATE 
+  TinyRendererLib 
   )
-
-
 
 
 file(GLOB TEST_FILES tests/*cpp)
