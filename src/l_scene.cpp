@@ -13,14 +13,4 @@ struct render {
 
 Scene::Scene() = default;
 
-Scene::~Scene() { registry.clear(); }
-
-void Scene::addModel(std::string src) {
-  auto entity = registry.create();
-  registry.emplace<render>(entity, 0., 0., 0., src);
-}
-
-auto& Scene::getRenderizable() {
-  auto renderizable = registry.view<render>();
-  return renderizable;
-}
+Scene::~Scene() { s_registry.clear(); }
