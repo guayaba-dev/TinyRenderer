@@ -3,17 +3,27 @@
 
 #include "../.dependencies/entt/entt.hpp"
 #include "l_matrix.h"
+#include "l_shaderDefinition.h"
 #include "model.h"
 
-struct positon {
-  float x, y;
+struct Transform {
+  Vec3f pos;
+  // TODO: Add quad Rotation
+  Vec3f scale;
+  matrix<4, 4> world_matrix;
 };
 
-struct model {};  // TODO: add model components
+struct mesh {
+  Model* model;
+};  // TODO: add model components or change model to separate the data
 
-struct material {};  // TODO: add shader material
+struct material {
+  IShader* shader;
+};
 
-struct camera {};
+struct camera {
+  Vec3f center, pos, UP;
+};
 
 class Scene {
  private:
@@ -23,5 +33,5 @@ class Scene {
   Scene();
   ~Scene();
 
-  const entt::registry& getRegistry() { return s_registry; };
+  entt::registry& getRegistry() { return s_registry; };
 };
