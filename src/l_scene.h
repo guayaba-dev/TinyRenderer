@@ -23,6 +23,7 @@ struct material {
 
 struct camera {
   Vec3f center, pos, UP;
+  bool active;
 };
 
 class Scene {

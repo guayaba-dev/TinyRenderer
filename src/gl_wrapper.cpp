@@ -46,3 +46,9 @@ void drawModel(Model* model) {
   bufferToRender(currentWindow.renderer, z_shadedBuffer);
   delete z_shadedBuffer;
 }
+
+void drawScene(Scene* scene) {
+  // Transform System
+
+  // Render System (Transform, Mesh, Material)
+}
