@@ -2,6 +2,7 @@
 
 #include "gl.h"
 #include "l_matrix.h"
+#include "l_scene.h"
 #include "l_shaderDefinition.h"
 
 // const definitions for drawing
@@ -14,6 +15,24 @@ const vec<3> eye(1, 1, 1);
 const Vec3f center(0, 0, 0);
 
 void setWindow(Window& window) { currentWindow = window; }
+
+matrix<4, 4> getWorldCoords(Transform component) {
+  zBufferShader shader2 = zBufferShader(
+      lookat(center, eye, UP),
+      viewport(currentWindow.size[0], currentWindow.size[1], 0, 0),
+      projection(0));
+
+  matrix<4, 4> modelMatrix;
+
+  for (int i = 3; i--;)
+    for (int j = 3; j--;)
+      if (i == j) modelMatrix(i, j) = component.scale[j];
+
+  modelMatrix.setCol(embed<3, 4>(component.pos, 1), 3);
+
+  return shader2.ViewPort * shader2.Projection * shader2.ModelView *
+         modelMatrix;
+}
 
 void drawModel(Model* model) {
   int windowArea = currentWindow.size[0] * currentWindow.size[1];
@@ -48,7 +67,17 @@ void drawModel(Model* model) {
 }
 
 void drawScene(Scene* scene) {
-  // Transform System
+  zBufferShader shader2 = zBufferShader(
+      lookat(center, eye, UP),
+      viewport(currentWindow.size[0], currentWindow.size[1], 0, 0),
+      projection(0));
+
+  auto transformEntities = scene->getRegistry().view<Transform>();
+
+  for (auto entity : transformEntities) {
+    auto& transform = transformEntities.get<Transform>(entity);
+    transform.world_matrix = getWorldCoords(transform);
+  }
 
   // Render System (Transform, Mesh, Material)
 }
