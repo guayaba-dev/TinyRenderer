@@ -23,13 +23,14 @@ Vec4f getBarycentric(Vec3f vertex[], Vec3f point) {
 
   Vec3f u = crossProduct(x_vertex, y_vertex);
 
-  if (abs(u[2]) < 1) return Vec4f(-1, 1, 1, 0);
+  if (abs(u[2]) < 1)
+    return Vec4f(-1, 1, 1, 0);
 
   return Vec4f(1 - (u[0] + u[1]) / u[2], u[0] / u[2], u[1] / u[2], 0.f);
 }
 
-void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
-                  IShader& shader, Vec2f windowDimensions) {
+void drawTriangle(Vec3f points[], float z_buffer[], TGAImage *buffer,
+                  IShader &shader, Vec2f windowDimensions) {
   Vec2f bboxmin(windowDimensions);
   Vec2f bboxmax(0, 0);
   Vec2f clamp(windowDimensions);
@@ -48,27 +49,30 @@ void drawTriangle(Vec3f points[], float z_buffer[], TGAImage* buffer,
       Vec4f barycentric = getBarycentric(points, P);
 
       if (barycentric[0] < 0. || barycentric[1] < 0. || barycentric[2] < 0.)
-        continue;  // out of triangleBounds
+        continue; // out of triangleBounds
 
       P[2] = 0;
 
       // z coords aproximation
-      for (int i = 0; i < 3; i++) P[2] = P[2] + (points[i][2] * barycentric[i]);
+      for (int i = 0; i < 3; i++)
+        P[2] = P[2] + (points[i][2] * barycentric[i]);
 
-      if (P[2] < z_buffer[int(P[0] + P[1] * windowDimensions[0])]) continue;
+      if (P[2] < z_buffer[int(P[0] + P[1] * windowDimensions[0])])
+        continue;
 
       z_buffer[int(P[0] + P[1] * windowDimensions[0])] = P[2];
 
       TGAColor shadedColor;
 
-      if (shader.fragment(barycentric, shadedColor)) continue;
+      if (shader.fragment(barycentric, shadedColor))
+        continue;
 
       buffer->set(P[0], P[1], shadedColor);
     }
   }
 }
 
-void bufferToRender(SDL_Renderer* renderer, TGAImage* buffer) {
+void bufferToRender(SDL_Renderer *renderer, TGAImage *buffer) {
   buffer->flip_vertically();
 
   for (int j = 0; j < buffer->get_height(); j++) {
@@ -126,4 +130,4 @@ void projection(float coeff) {
   std::cerr << "------------\n Projection\n";
   printMath(Projection);
 
-}  // coeff = -1/c
+} // coeff = -1/c
